@@ -1,0 +1,5 @@
+node_modules
+.sisyphus
+.idea
+bun.lock
+nul
