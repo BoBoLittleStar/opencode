@@ -1,18 +1,14 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "z.ai": {
-      "name": "z.ai",
+    "opencode-zen": {
+      "name": "opencode-zen",
       "options": {
-        "baseURL": "https://api.z.ai/api/paas/v4",
-        "apiKey": "{env:Z_AI_API_KEY}"
+        "baseURL": "https://opencode.ai/zen/v1"
       },
       "models": {
-        "glm-4.5-flash": {
-          "name": "glm-4.5-flash"
-        },
-        "glm-4.7-flash": {
-          "name": "glm-4.7-flash"
+        "big-pickle": {
+          "name": "big-pickle"
         }
       }
     },
@@ -33,6 +29,7 @@
     }
   },
   "plugin": [
-    "oh-my-opencode"
+    "oh-my-openagent",
+    "./plugins/dist"
   ]
 }

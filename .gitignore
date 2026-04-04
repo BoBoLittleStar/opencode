@@ -3,3 +3,5 @@ node_modules
 .idea
 bun.lock
 nul
+dist
+*.log
