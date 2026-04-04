@@ -11,11 +11,10 @@
     "types": ["node"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": ".",
     "paths": {
       "@opencode-ai/plugin": ["../node_modules/@opencode-ai/plugin"]
     },
-    "ignoreDeprecations": "6.0"
+    "ignoreDeprecations": "5.0"
   },
   "include": ["src/**/*"]
 }

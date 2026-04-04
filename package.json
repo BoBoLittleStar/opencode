@@ -8,6 +8,8 @@
   "main": "index.js",
   "scripts": {
     "build": "cd plugins && npx tsc",
+    "clean": "rm -rf plugins/dist",
+    "rebuild": "npm run clean && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
