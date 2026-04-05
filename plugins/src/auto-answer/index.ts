@@ -1,55 +1,23 @@
-import http from 'http';
 import type {Plugin} from "@opencode-ai/plugin";
-import {createServer} from './server';
 import {postQuestions} from './client';
-import {createLogger} from '../util';
+import {getLogger} from '../util';
+
+function sessionIDToUUID(sessionID: string): string {
+    let hash = 0;
+    for (let i = 0; i < sessionID.length; i++) {
+        hash = ((hash << 5) - hash) + sessionID.charCodeAt(i);
+        hash = hash & hash;
+    }
+    const hashHex = Math.abs(hash).toString(16).padStart(8, '0').repeat(4).slice(0, 32);
+    return `${hashHex.slice(0, 8)}-${hashHex.slice(8, 12)}-${hashHex.slice(12, 16)}-${hashHex.slice(16, 20)}-${hashHex.slice(20, 32)}`;
+}
 
 export const AutoAnswer: Plugin = async () => {
-    const PORT = 17345;
-
-    function startServer(): Promise<void> {
-        return new Promise((resolve) => {
-            logger.info("new promise");
-            const testServer = http.createServer();
-            testServer.once('error', (err: NodeJS.ErrnoException) => {
-                if (err.code === 'EADDRINUSE') {
-                    logger.info(`AutoAnswer Server already running on port ${PORT}, skipping start`);
-                    resolve();
-                } else {
-                    logger.error(`AutoAnswer Server error: ${err.message}`);
-                    resolve();
-                }
-            });
-            testServer.once('listening', () => {
-                logger.info('listening');
-                testServer.close(() => {
-                    logger.info('close');
-                    let server = createServer();
-                    server.on('error', (err: NodeJS.ErrnoException) => {
-                        if (err.code === 'EADDRINUSE') {
-                            logger.info(`AutoAnswer Server already running on port ${PORT}`);
-                        } else {
-                            logger.error(`AutoAnswer Server error: ${err.message}`);
-                        }
-                    });
-                    server.listen(PORT, () => {
-                        logger.info(`AutoAnswer Server started at http://localhost:${PORT}`);
-                        resolve();
-                    });
-                });
-            });
-            logger.info('listen');
-            testServer.listen(PORT);
-        });
-    }
-
-    const logger = createLogger();
-    await startServer();
+    const logger = getLogger();
 
     return {
         'tool.execute.before': async (input, output: { args: unknown }) => {
             if (input.tool === 'question') {
-                logger.info(`Agent is asking a question.`);
                 const args = output.args as {
                     questions?: Array<{
                         header: string;
@@ -59,8 +27,9 @@ export const AutoAnswer: Plugin = async () => {
                     }>
                 };
                 if (args.questions && Array.isArray(args.questions)) {
+                    const source_id = input.sessionID ? sessionIDToUUID(input.sessionID) : crypto.randomUUID();
                     const questions = args.questions.map(q => ({
-                        id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                        source_id,
                         content: q.question,
                         options: q.options.map(opt => ({
                             text: opt.label,
@@ -70,11 +39,14 @@ export const AutoAnswer: Plugin = async () => {
                         createdAt: new Date().toISOString()
                     }));
                     let messageSent = false;
-                    await postQuestions(questions).then(() => messageSent = true).catch(err => {
-                        logger.error(`Failed to post questions: ${err.message}`);
-                    });
+                    try {
+                        await postQuestions(questions);
+                        messageSent = true;
+                    } catch (err) {
+                        logger.error(`Failed to post questions: ${(err as Error).message}`);
+                    }
                     if (messageSent) {
-                        throw new Error('问题已发送，请等待回应');
+                        throw new Error('问题已留言，请稍后，用户将尽快回答');
                     }
                 }
             }
