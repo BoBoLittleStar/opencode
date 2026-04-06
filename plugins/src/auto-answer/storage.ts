@@ -12,26 +12,9 @@ const DB_DIR = path.join(DATA_DIR, 'database');
 const SCRIPT_DIR = path.dirname(path.resolve(__filename));
 const PYTHON_SCRIPT = path.join(SCRIPT_DIR, 'python', 'db.py');
 
-export interface QuestionRow {
-    id: string;
-    source_id: string;
-    content: string;
-    options: string;
-    multiple: number;
-    created_at: string;
-}
-
-export interface AnswerRow {
-    id: string;
-    question_id: string;
-    source_id: string;
-    selected_options: string | null;
-    custom_answer: string | null;
-    created_at: string;
-}
-
 export interface Question {
     id: string;
+    group_id: string;
     source_id: string;
     content: string;
     options: Option[];
@@ -41,6 +24,7 @@ export interface Question {
 
 export interface Answer {
     id: string;
+    group_id: string;
     question_id: string;
     source_id: string;
     answer: string;
@@ -96,6 +80,7 @@ export function initDatabase(): void {
 
 export function addQuestions(questions: Omit<Question, 'id'>[]): void {
     const data = questions.map((q) => ({
+        group_id: q.group_id,
         source_id: q.source_id,
         content: q.content,
         options: q.options,
@@ -113,6 +98,7 @@ export function addQuestions(questions: Omit<Question, 'id'>[]): void {
 function mapRowToQuestion(row: Record<string, unknown>): Question {
     return {
         id: row.id as string,
+        group_id: row.group_id as string,
         source_id: row.source_id as string,
         content: row.content as string,
         options: row.options as Option[],
@@ -124,6 +110,7 @@ function mapRowToQuestion(row: Record<string, unknown>): Question {
 function mapRowToAnswer(row: Record<string, unknown>): Answer {
     return {
         id: row.id as string,
+        group_id: row.group_id as string,
         question_id: row.question_id as string,
         source_id: row.source_id as string,
         answer: (row.answer as string) || '',
@@ -140,8 +127,17 @@ export function getQuestions(): Question[] {
     return rows.map(mapRowToQuestion);
 }
 
-export function getUnansweredQuestionsBySource(sourceId: string): Question[] {
-    const output = runPythonCommand('get_unanswered_by_source', {source_id: sourceId});
+export function getLatestUnansweredGroup(sourceId: string): string | null {
+    const output = runPythonCommand('get_latest_unanswered_group', {source_id: sourceId});
+    const result = parseJsonOutput(output) as { group_id?: string; error?: string };
+    if (result.error) {
+        throw new Error(result.error);
+    }
+    return result.group_id || null;
+}
+
+export function getUnansweredQuestionsByGroup(groupId: string): Question[] {
+    const output = runPythonCommand('get_unanswered_by_group', {group_id: groupId});
     const rows = parseJsonOutput(output) as Record<string, unknown>[];
     if (!Array.isArray(rows)) {
         return [];
@@ -149,8 +145,18 @@ export function getUnansweredQuestionsBySource(sourceId: string): Question[] {
     return rows.map(mapRowToQuestion);
 }
 
+// Legacy function - kept for backward compatibility but not used
+export function getUnansweredQuestionsBySource(sourceId: string): Question[] {
+    const groupId = getLatestUnansweredGroup(sourceId);
+    if (!groupId) {
+        return [];
+    }
+    return getUnansweredQuestionsByGroup(groupId);
+}
+
 export function addAnswers(answers: Omit<Answer, 'id'>[]): void {
     const data = answers.map((a) => ({
+        group_id: a.group_id,
         question_id: a.question_id,
         source_id: a.source_id,
         answer: a.answer,
@@ -180,4 +186,13 @@ export function getAnswerByQuestionId(questionId: string): Answer | null {
         return null;
     }
     return mapRowToAnswer(row);
+}
+
+export function cleanOldData(): number {
+    const output = runPythonCommand('clean_old_data');
+    const result = parseJsonOutput(output) as { deleted_questions?: number; error?: string };
+    if (result.error) {
+        throw new Error(result.error);
+    }
+    return result.deleted_questions || 0;
 }

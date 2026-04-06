@@ -6,7 +6,7 @@ export async function postQuestions(questions: { source_id: string; content: str
     const data = JSON.stringify({ questions });
     const options = {
       hostname: 'localhost',
-      port: 17345,
+      port: 17346,
       path: '/api/questions',
       method: 'POST',
       headers: {

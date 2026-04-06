@@ -1,6 +1,6 @@
 import http from 'http';
 import type {AnswerInput, QuestionInput} from './types';
-import {addAnswers, addQuestions, getAnswerByQuestionId, getQuestions, getUnansweredQuestionsBySource} from './storage';
+import {addAnswers, addQuestions, cleanOldData, getAnswerByQuestionId, getLatestUnansweredGroup, getQuestions, getUnansweredQuestionsByGroup} from './storage';
 import {isValidUUID, validateCustomAnswerLength, validateOptions} from './validation';
 
 function parseBody(req: http.IncomingMessage): Promise<unknown> {
@@ -33,6 +33,10 @@ async function handleQuestions(req: http.IncomingMessage, res: http.ServerRespon
         }
 
         for (const q of body.questions) {
+            // Validate group_id (must be valid UUID)
+            if (!q.group_id || !isValidUUID(q.group_id)) {
+                return sendJson(res, 400, {error: 'Each question must have a valid group_id (UUID)'});
+            }
             // Validate source_id (must be valid UUID)
             if (!q.source_id || !isValidUUID(q.source_id)) {
                 return sendJson(res, 400, {error: 'Each question must have a valid source_id (UUID)'});
@@ -48,6 +52,7 @@ async function handleQuestions(req: http.IncomingMessage, res: http.ServerRespon
         }
 
         const newQuestions = body.questions.map((q) => ({
+            group_id: q.group_id,
             source_id: q.source_id,
             content: q.content,
             options: q.options.map(opt => ({
@@ -80,26 +85,30 @@ async function handleAnswers(req: http.IncomingMessage, res: http.ServerResponse
             return sendJson(res, 400, {error: 'Missing or invalid answers array'});
         }
 
-        // Collect all source_ids to check for batch validation
-        const sourceIds = new Set<string>();
+        // Collect all group_ids to check for batch validation
+        const groupIds = new Set<string>();
         for (const a of body.answers) {
+            // Validate group_id
+            if (!a.group_id || !isValidUUID(a.group_id)) {
+                return sendJson(res, 400, {error: 'Each answer must have a valid group_id (UUID)'});
+            }
             // Validate source_id
             if (!a.source_id || !isValidUUID(a.source_id)) {
                 return sendJson(res, 400, {error: 'Each answer must have a valid source_id (UUID)'});
             }
-            sourceIds.add(a.source_id);
+            groupIds.add(a.group_id);
         }
 
-        // Batch validation: for each source, check if ALL unanswered questions are being answered
-        for (const sourceId of sourceIds) {
-            const unanswered = getUnansweredQuestionsBySource(sourceId);
-            const answeringIds = body.answers.filter(a => a.source_id === sourceId).map(a => a.questionId);
+        // Batch validation: for each group, check if ALL unanswered questions in that group are being answered
+        for (const groupId of groupIds) {
+            const unanswered = getUnansweredQuestionsByGroup(groupId);
+            const answeringIds = body.answers.filter(a => a.group_id === groupId).map(a => a.questionId);
 
-            // Check if all unanswered questions are being answered
+            // Check if all unanswered questions in the group are being answered
             const allAnswered = unanswered.every(q => answeringIds.includes(q.id));
             if (!allAnswered && unanswered.length > 0) {
                 return sendJson(res, 400, {
-                    error: `Must answer all unanswered questions for source ${sourceId} at once. Unanswered: ${unanswered.length}, Answering: ${answeringIds.length}`
+                    error: `Must answer all unanswered questions in group ${groupId} at once. Unanswered: ${unanswered.length}, Answering: ${answeringIds.length}`
                 });
             }
         }
@@ -117,6 +126,11 @@ async function handleAnswers(req: http.IncomingMessage, res: http.ServerResponse
                 return sendJson(res, 404, {error: `Question ${a.questionId} not found`});
             }
 
+            // Check if question belongs to the same group
+            if (question.group_id !== a.group_id) {
+                return sendJson(res, 400, {error: `Question ${a.questionId} does not belong to group ${a.group_id}`});
+            }
+
             // Check if answer already exists for this question
             const existingAnswer = getAnswerByQuestionId(a.questionId);
             if (existingAnswer) {
@@ -130,6 +144,7 @@ async function handleAnswers(req: http.IncomingMessage, res: http.ServerResponse
         }
 
         const newAnswers = body.answers.map((a) => ({
+            group_id: a.group_id,
             question_id: a.questionId,
             source_id: a.source_id,
             answer: a.answer || '',
@@ -177,6 +192,17 @@ function handleGetQuestions(res: http.ServerResponse, url: string): void {
     }
 }
 
+// API: POST /api/clean
+async function handleClean(res: http.ServerResponse): Promise<void> {
+    try {
+        const deleted = cleanOldData();
+        sendJson(res, 200, {success: true, deleted});
+    } catch (err) {
+        const message = err instanceof Error ? err.message : `Unknown error: ${err}`;
+        sendJson(res, 500, {error: message});
+    }
+}
+
 export function createServer(): http.Server {
     return http.createServer(async (req, res) => {
         const url = req.url ?? '';
@@ -196,6 +222,9 @@ export function createServer(): http.Server {
             }
             if (method === 'POST' && url === '/api/answers') {
                 return handleAnswers(req, res);
+            }
+            if (method === 'POST' && url === '/api/clean') {
+                return handleClean(res);
             }
             if (method === 'GET' && url?.startsWith('/api/questions')) {
                 return handleGetQuestions(res, url);

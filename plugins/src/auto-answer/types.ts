@@ -5,6 +5,7 @@ export interface Option {
 
 export interface Question {
   id: string;
+  group_id: string;
   source_id: string;
   content: string;
   options: Option[];
@@ -15,6 +16,7 @@ export interface Question {
 
 export interface Answer {
   id: string;
+  group_id: string;
   question_id: string;
   source_id: string;
   answer: string;  // Single field: selected option or custom answer text
@@ -22,6 +24,7 @@ export interface Answer {
 }
 
 export interface QuestionInput {
+  group_id: string;
   source_id: string;
   content: string;
   options: Option[];
@@ -29,6 +32,7 @@ export interface QuestionInput {
 }
 
 export interface AnswerInput {
+  group_id: string;
   source_id: string;
   questionId: string;
   answer: string;  // Single field for answer

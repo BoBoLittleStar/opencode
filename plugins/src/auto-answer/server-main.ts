@@ -2,7 +2,7 @@ import {initDatabase} from './storage';
 import {createServer} from './server';
 import {getLogger} from '../util';
 
-const PORT = 17345;
+const PORT = 17346;
 
 async function main(): Promise<void> {
     const logger = getLogger();

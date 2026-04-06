@@ -28,7 +28,10 @@ export const AutoAnswer: Plugin = async () => {
                 };
                 if (args.questions && Array.isArray(args.questions)) {
                     const source_id = input.sessionID ? sessionIDToUUID(input.sessionID) : crypto.randomUUID();
+                    // Generate a group_id for this batch of questions
+                    const group_id = crypto.randomUUID();
                     const questions = args.questions.map(q => ({
+                        group_id,
                         source_id,
                         content: q.question,
                         options: q.options.map(opt => ({
