@@ -44,7 +44,6 @@ export const ToolListener: Plugin = async () => {
             if (input.tool === 'bash') {
                 const bashArgs = args as { command?: string; commands?: string[] };
                 const commands = bashArgs.commands || (bashArgs.command ? [bashArgs.command] : []);
-                logger.info(commands);
 
                 for (const command of commands) {
                     // Check for kill-by-name targeting opencode

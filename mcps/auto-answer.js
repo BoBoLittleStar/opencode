@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Auto-Answer Server Launcher
+ * Auto-Answer Server
  * 
  * Usage:
- *   node server-launcher.js           # Start in background (default)
- *   node server-launcher.js --start   # Start in background
- *   node server-launcher.js --stop    # Stop the running server
- *   node server-server-launcher.js --status  # Check if running
- *   node server-launcher.js --install        # Install as auto-start (Windows)
- *   node server-launcher.js --uninstall      # Remove auto-start
- *   node server-launcher.js --foreground     # Run in foreground (keep terminal)
+ *   node auto-answer.js           # Start in background (default)
+ *   node auto-answer.js --start   # Start in background
+ *   node auto-answer.js --stop    # Stop the running server
+ *   node auto-answer.js --status  # Check if running
+ *   node auto-answer.js --install        # Install as auto-start (Windows)
+ *   node auto-answer.js --uninstall      # Remove auto-start
+ *   node auto-answer.js --foreground     # Run in foreground (keep terminal)
  */
 
 const http = require('http');
@@ -53,8 +53,8 @@ for (let i = 0; i < args.length; i++) {
     }
 }
 
-// Python script path
-const PYTHON_SCRIPT = path.join(__dirname, 'dist', 'auto-answer', 'python', 'db.py');
+// Python script path (same directory)
+const PYTHON_SCRIPT = path.join(__dirname, 'db.py');
 
 // Helper function to run Python commands
 function runPythonCommand(cmd, stdinData) {
@@ -325,7 +325,7 @@ async function startServer(foreground = false) {
         console.log(`AutoAnswer Server started at http://localhost:${port}`);
         if (!foreground) {
             console.log('Server is running in background');
-            console.log('Use "node server-launcher.js --stop" to stop');
+            console.log('Use "node auto-answer.js --stop" to stop');
         }
     });
 

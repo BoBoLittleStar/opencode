@@ -1,5 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "auto-answer": {
+      "type": "local",
+      "command": ["node", "mcps/mcp-auto-answer.js"],
+      "enabled": true
+    }
+  },
   "provider": {
     "opencode-zen": {
       "name": "opencode-zen",
