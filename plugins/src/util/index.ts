@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { traceParentProcessChain } from '../process';
 
 const format = (date: Date) => {
     const year = date.getFullYear();
@@ -59,3 +60,13 @@ class Logger {
 
 const logger = new Logger();
 export const getLogger = () => logger;
+
+
+/**
+ * Get current opencode process PID by tracing the parent process chain
+ * Equivalent to my-pid tool - finds opencode.exe in the process tree
+ */
+export function getCurrentPID(): number {
+    const result = traceParentProcessChain();
+    return result.opencodePID;
+}

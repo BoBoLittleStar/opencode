@@ -7,3 +7,5 @@ dist
 *.log
 .auto-answer
 __pycache__
+tools/**/*.js
+libs/**/*.js
