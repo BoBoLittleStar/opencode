@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { traceParentProcessChain } from '../process';
+import {traceParentProcessChain} from './process';
 
 const format = (date: Date) => {
     const year = date.getFullYear();

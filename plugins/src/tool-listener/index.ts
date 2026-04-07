@@ -1,5 +1,5 @@
 import type {Plugin} from "@opencode-ai/plugin";
-import {getCurrentPID, getLogger} from '../util';
+import {getCurrentPID} from '../util';
 
 
 // Regex patterns for kill-by-PID
@@ -36,7 +36,6 @@ function extractPID(command: string): number | null {
 
 
 export const ToolListener: Plugin = async () => {
-    const logger = getLogger();
     const currentPID = getCurrentPID();
 
     return {
