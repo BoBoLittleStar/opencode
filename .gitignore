@@ -4,7 +4,7 @@ node_modules
 bun.lock
 nul
 dist
-*.log
+logs
 .auto-answer
 __pycache__
 tools/**/*.js
