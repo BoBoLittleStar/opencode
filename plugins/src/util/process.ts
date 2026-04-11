@@ -7,7 +7,7 @@ export interface ProcessChainResult {
 }
 
 export function traceParentProcessChain(): ProcessChainResult {
-    const out = execSync(`powershell -NoProfile -Command "Get-CurrentOpencodePID | ConvertTo-Json -Compress"`, {
+    const out = execSync(`powershell -Command "Get-CurrentOpencodePID | ConvertTo-Json -Compress"`, {
         encoding: 'utf8',
         windowsHide: true
     });
