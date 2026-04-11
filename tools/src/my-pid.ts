@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin"
-import { traceParentProcessChain } from "../libs/process"
+import { traceParentProcessChain } from "#libs/process"
 
 export default tool({
   description: "Get the current opencode process ID by tracing the parent process chain",

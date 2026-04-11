@@ -6,10 +6,16 @@
   "author": "",
   "type": "commonjs",
   "main": "index.js",
+  "imports": {
+    "#libs/*": "./libs/dist/*"
+  },
   "scripts": {
-    "build": "cd plugins && npx tsc && node copy-scripts.js",
-    "copy-scripts": "node plugins/copy-scripts.js",
-    "clean": "rm -rf plugins/dist",
+    "build:libs": "npx tsc -p libs/tsconfig.json",
+    "build:tools": "npx tsc -p tools/tsconfig.json",
+    "build:plugins": "npx tsc -p plugins/tsconfig.json",
+    "build:mcps": "npx tsc -p mcps/tsconfig.json",
+    "build": "npm run build:libs && npm run build:tools && npm run build:mcps && npm run build:plugins",
+    "clean": "node scripts/clean.js",
     "rebuild": "npm run clean && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

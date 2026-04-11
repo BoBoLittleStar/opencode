@@ -1,19 +1,11 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-    "types": ["node"],
-    "paths": {
-      "@opencode-ai/plugin": ["../node_modules/@opencode-ai/plugin"],
-      "@libs/*": ["./*"]
-    },
-    "ignoreDeprecations": "5.0"
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true
   },
-  "include": ["./**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }

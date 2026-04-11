@@ -6,7 +6,8 @@
  * Implements JSON-RPC 2.0 protocol over stdin/stdout
  */
 
-const http = require('http');
+import * as http from 'http';
+import { getLogger } from '#libs/logger';
 
 const DEFAULT_PORT = 17346;
 
@@ -16,12 +17,12 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 // MCP Protocol Implementation
 
-function sendResponse(id, result) {
+function sendResponse(id: string | number | undefined, result: unknown): void {
     const response = { jsonrpc: '2.0', id, result };
     process.stdout.write(JSON.stringify(response) + '\n');
 }
 
-function sendError(id, code, message) {
+function sendError(id: string | number | undefined, code: number, message: string): void {
     const response = {
         jsonrpc: '2.0',
         id,
@@ -30,19 +31,19 @@ function sendError(id, code, message) {
     process.stdout.write(JSON.stringify(response) + '\n');
 }
 
-function sendNotification(method, params) {
+function sendNotification(method: string, params: unknown): void {
     const notification = { jsonrpc: '2.0', method, params };
     process.stdout.write(JSON.stringify(notification) + '\n');
 }
 
 // HTTP request helper
-function httpRequest(method, path, body = null) {
+function httpRequest(method: string, path: string, body: unknown = null): Promise<unknown> {
     return new Promise((resolve, reject) => {
         const url = new URL(path, BASE_URL);
         
         const postData = body ? JSON.stringify(body) : null;
         
-        const options = {
+        const options: http.RequestOptions = {
             hostname: '127.0.0.1',
             port: url.port,
             path: url.pathname,
@@ -90,7 +91,17 @@ function httpRequest(method, path, body = null) {
 }
 
 // Tool definitions
-const TOOLS = [
+interface Tool {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: Record<string, unknown>;
+        required: string[];
+    };
+}
+
+const TOOLS: Tool[] = [
     {
         name: 'get_questions',
         description: 'Get all questions with their answers',
@@ -179,8 +190,12 @@ const TOOLS = [
     }
 ];
 
+interface ToolResult {
+    content: Array<{ type: string; text: string }>;
+}
+
 // Tool handlers
-async function handleToolCall(toolName, arguments_) {
+async function handleToolCall(toolName: string, args: unknown): Promise<ToolResult> {
     switch (toolName) {
         case 'get_questions': {
             const result = await httpRequest('GET', '/api/questions');
@@ -195,11 +210,11 @@ async function handleToolCall(toolName, arguments_) {
         }
 
         case 'add_questions': {
-            if (!arguments_ || !arguments_.questions) {
+            if (!args || !(args as { questions?: unknown }).questions) {
                 throw new Error('Missing required parameter: questions');
             }
             const result = await httpRequest('POST', '/api/questions', {
-                questions: arguments_.questions
+                questions: (args as { questions: unknown }).questions
             });
             return {
                 content: [
@@ -212,11 +227,11 @@ async function handleToolCall(toolName, arguments_) {
         }
 
         case 'add_answers': {
-            if (!arguments_ || !arguments_.answers) {
+            if (!args || !(args as { answers?: unknown }).answers) {
                 throw new Error('Missing required parameter: answers');
             }
             const result = await httpRequest('POST', '/api/answers', {
-                answers: arguments_.answers
+                answers: (args as { answers: unknown }).answers
             });
             return {
                 content: [
@@ -269,7 +284,7 @@ async function handleToolCall(toolName, arguments_) {
 }
 
 // MCP Protocol handlers
-async function handleRequest(method, params) {
+async function handleRequest(method: string, params: unknown): Promise<unknown> {
     switch (method) {
         case 'initialize': {
             return {
@@ -291,12 +306,12 @@ async function handleRequest(method, params) {
         }
 
         case 'tools/call': {
-            const { name, arguments: args } = params;
+            const { name, arguments: args } = params as { name: string; arguments: unknown };
             try {
                 const result = await handleToolCall(name, args);
                 return result;
             } catch (err) {
-                throw new Error(`Tool execution failed: ${err.message}`);
+                throw new Error(`Tool execution failed: ${(err as Error).message}`);
             }
         }
 
@@ -338,13 +353,13 @@ process.stdin.on('data', async (chunk) => {
                         sendResponse(id, result);
                     }
                 } catch (err) {
-                    sendError(id, -32603, err.message);
+                    sendError(id, -32603, (err as Error).message);
                 }
             }
         } catch (err) {
             try {
                 const request = JSON.parse(line);
-                sendError(request.id, -32603, err.message);
+                sendError(request.id, -32603, (err as Error).message);
             } catch {}
         }
     }
@@ -355,14 +370,14 @@ process.stdin.on('end', () => {
 });
 
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught exception:', err);
+    getLogger().error('Uncaught exception:', err);
     process.exit(1);
 });
 
 process.on('unhandledRejection', (err) => {
-    console.error('Unhandled rejection:', err);
+    getLogger().error('Unhandled rejection:', err);
     process.exit(1);
 });
 
-console.error('MCP Auto Answer adapter started');
-console.error(`Target server: http://localhost:${PORT}`);
+getLogger().info('MCP Auto Answer adapter started');
+getLogger().info(`Target server: http://localhost:${PORT}`);

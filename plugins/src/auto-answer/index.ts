@@ -1,6 +1,6 @@
 import type {Plugin} from "@opencode-ai/plugin";
 import {postQuestions} from './client';
-import {getLogger} from '../util';
+import {getLogger} from '../../../libs/dist/logger';
 
 function sessionIDToUUID(sessionID: string): string {
     let hash = 0;

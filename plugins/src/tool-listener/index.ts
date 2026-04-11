@@ -1,7 +1,6 @@
 import type {Plugin} from "@opencode-ai/plugin";
-import { getCurrentPID } from '../util';
-import { execSync } from 'child_process';
-import * as path from 'path';
+import {getCurrentPID} from '#libs/process';
+import {execSync} from 'child_process';
 import * as os from 'os';
 
 /**

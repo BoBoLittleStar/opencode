@@ -59,3 +59,7 @@ export function traceParentProcessChain(): ProcessChainResult {
         chain: chain.reverse().join(' <- ')
     };
 }
+
+export function getCurrentPID(): number {
+    return traceParentProcessChain().opencodePID;
+}
