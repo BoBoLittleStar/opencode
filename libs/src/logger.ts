@@ -12,7 +12,8 @@ class Logger {
     private readonly basePath: string;
 
     constructor(logName: string = 'bobolittlestar-opencode') {
-        this.baseDir = path.join(process.cwd(), 'logs');
+        const configDir = process.env.OPENCODE_CONFIG_DIR || process.cwd();
+        this.baseDir = path.join(configDir, 'logs');
         this.baseName = logName;
         this.basePath = path.join(this.baseDir, `${logName}.log`);
     }

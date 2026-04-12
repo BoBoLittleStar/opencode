@@ -6,7 +6,7 @@
       "command": [
         "npx",
         "tsx",
-        "mcps/src/mcp-auto-answer.ts"
+        "{env:OPENCODE_CONFIG_DIR_ESCAPED}\\mcps\\src\\mcp-auto-answer.ts"
       ],
       "enabled": true
     }
