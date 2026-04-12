@@ -1,6 +1,6 @@
-# OpenCode Tool Listener 插件需求文档
+# OpenCode Security Checker 插件需求文档
 
-本文档描述 Tool Listener 插件的业务流程需求，设计/开发过程中有任何问题，请先阅读本文档
+本文档描述 Security Checker 插件的业务流程需求，设计/开发过程中有任何问题，请先阅读本文档
 
 ## 插件需求如下：
 
@@ -18,5 +18,3 @@
     * 不符合上述条件则允许执行
 2. 当 opencode 试图在 ~/.config/opencode 下进行文件读写时
     * 任何情况下都提示【配置拦截：请在 env:OPENCODE_CONFIG_DIR 下进行 opencode 的配置工作】
-3. 当 opencode 试图提出问题时
-    * 任何情况下都提示【问题拦截：请使用 Auto-Answer MCP 进行提问】

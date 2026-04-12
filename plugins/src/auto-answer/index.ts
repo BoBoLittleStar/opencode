@@ -17,7 +17,7 @@ export const AutoAnswer: Plugin = async () => {
 
     return {
         'tool.execute.before': async (input, output: { args: unknown }) => {
-            if (input.tool === 'question') {
+            if (input.tool === 'question' || input.tool === 'ask' || input.tool === 'gpt-ask') {
                 const args = output.args as {
                     questions?: Array<{
                         header: string;

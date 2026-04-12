@@ -41,23 +41,26 @@ function httpRequest(method: string, path: string, body: unknown = null): Promis
     return new Promise((resolve, reject) => {
         const url = new URL(path, BASE_URL);
         
-        const postData = body ? JSON.stringify(body) : null;
+        const postData = body ? JSON.stringify(body) : undefined;
+        
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (postData) {
+            headers['Content-Length'] = String(Buffer.byteLength(postData));
+        }
         
         const options: http.RequestOptions = {
             hostname: '127.0.0.1',
             port: url.port,
             path: url.pathname,
             method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': postData ? Buffer.byteLength(postData) : 0
-            },
+            headers,
             timeout: 5000
         };
 
-        const req = http.request(options);
-        
-        req.on('response', (res) => {
+        const req = http.request(options, (res) => {
             let data = '';
             res.on('data', (chunk) => data += chunk);
             res.on('end', () => {
@@ -69,24 +72,20 @@ function httpRequest(method: string, path: string, body: unknown = null): Promis
             });
         });
         
-        req.on('error', reject);
+        req.on('error', (e) => {
+            reject(e);
+        });
         
         req.on('timeout', () => {
             req.destroy();
             reject(new Error('Request timeout'));
         });
 
-        const timeoutId = setTimeout(() => {
-            req.destroy();
-            reject(new Error('Request timeout'));
-        }, 5000);
-
         if (postData) {
             req.write(postData);
         }
         
         req.end();
-        clearTimeout(timeoutId);
     });
 }
 

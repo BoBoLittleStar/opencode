@@ -15,7 +15,7 @@
     "build:plugins": "npx tsc -p plugins/tsconfig.json",
     "build:mcps": "npx tsc -p mcps/tsconfig.json",
     "build": "npm run build:libs && npm run build:tools && npm run build:mcps && npm run build:plugins",
-    "clean": "node scripts/clean.js",
+    "clean": "npx tsx scripts/clean.ts",
     "rebuild": "npm run clean && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

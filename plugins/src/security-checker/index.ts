@@ -46,7 +46,7 @@ function isProcessCommand(command: string): boolean {
     return /(?:stop|kill|terminate|ps|get-process|tasklist)\s+/i.test(command);
 }
 
-export const ToolListener: Plugin = async () => {
+export const SecurityChecker: Plugin = async () => {
     const currentPID = getCurrentPID();
     const childPIDs = getOpencodeChildPIDs();
     // 获取用户 home 目录
@@ -59,7 +59,7 @@ export const ToolListener: Plugin = async () => {
                 const commands = bashArgs.commands || (bashArgs.command ? [bashArgs.command] : []);
 
                 for (const command of commands) {
-                    // === 需求 1.1: 非 powershell 命令结束进程 (先检查) ===
+                    // === 需求 1: 非 powershell 命令结束进程 (先检查) ===
                     if (isProcessCommand(command)) {
                         if (!isPowerShellCommand(command)) {
                             throw new Error(
@@ -69,7 +69,7 @@ export const ToolListener: Plugin = async () => {
                         }
                     }
 
-                    // === 需求 1.2: 通过名称结束 opencode/node ===
+                    // === 需求 2: 通过名称结束 opencode/node ===
                     // 支持多种格式，包括 -Command 引号内的命令
                     const namePattern = /(?:stop-?process|kill|terminate|ps|get-?process|tasklist)\s+(?:-[nNIi]|\/IM|-name\s+|-Name\s+|\/name\s*)\s*(?:opencode|node|node\.exe)/i;
                     // 提取 -Command "xxx" 格式的命令
@@ -86,7 +86,7 @@ export const ToolListener: Plugin = async () => {
                         );
                     }
 
-                    // === 需求 1.3 & 1.4: 结束当前进程或子进程 ===
+                    // === 需求 3: 结束当前进程或子进程 ===
                     const pidMatch = command.match(/\b(\d+)\b/);
                     if (pidMatch) {
                         const targetPID = parseInt(pidMatch[1], 10);
@@ -104,7 +104,7 @@ export const ToolListener: Plugin = async () => {
                         }
                     }
 
-                    // === 需求 2: ~/.config/opencode 目录访问 ===
+                    // === 需求 4: ~/.config/opencode 目录访问 ===
                     const normalizedCommand = command.replace(/\\/g, '/');
                     if (normalizedCommand.includes('.config/opencode') || normalizedCommand.includes(`${homeDir.replace(/\\/g, '/')}/.config/opencode`)) {
                         throw new Error(
@@ -113,13 +113,6 @@ export const ToolListener: Plugin = async () => {
                         );
                     }
                 }
-            }
-
-            // === 需求 3: 提问拦截 ===
-            if (input.tool === 'question' || input.tool === 'ask' || input.tool === 'gpt-ask') {
-                throw new Error(
-                    `问题拦截：请使用 Auto-Answer MCP 进行提问\n`
-                );
             }
         }
     };

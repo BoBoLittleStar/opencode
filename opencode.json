@@ -3,7 +3,11 @@
   "mcp": {
     "auto-answer": {
       "type": "local",
-      "command": ["node", "mcps/mcp-auto-answer.js"],
+      "command": [
+        "npx",
+        "tsx",
+        "mcps/src/mcp-auto-answer.ts"
+      ],
       "enabled": true
     }
   },

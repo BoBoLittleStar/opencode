@@ -25,7 +25,7 @@
 
 1. 当 OpenCode 启动时从插件启动服务，如果服务已经启动则无需处理
 2. 当 OpenCode 退出时**保持服务运行，不要关闭**
-3. 当 OpenCode 使用 question 工具提问之前拦截所有问题，并在异常信息中注明："请通过 Auto-Answer MCP 工具保存问题"
+3. 当 OpenCode 使用 question/ask/gpt-ask 工具提问之前拦截所有问题，并在异常信息中注明："请使用 Auto-Answer MCP 进行提问"
 
 ### Part 3 技术规范 & 注意事项
 

@@ -1,9 +1,9 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const rootDir = path.join(__dirname, '..');
 
-function cleanJsWithTsSource(dir) {
+function cleanJsWithTsSource(dir: string): void {
     if (!fs.existsSync(dir)) return;
     
     const entries = fs.readdirSync(dir, { withFileTypes: true });

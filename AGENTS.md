@@ -4,7 +4,7 @@
 **Type:** opencode plugin project
 
 ## OVERVIEW
-opencode AI 助手的插件包，提供 auto-answer、demo、tool-listener 插件。
+opencode AI 助手的插件包，提供 auto-answer、demo、security-checker 插件。
 
 ## STRUCTURE
 ```
@@ -18,7 +18,7 @@ opencode AI 助手的插件包，提供 auto-answer、demo、tool-listener 插�
 │   │   ├── index.ts   # 导出所有插件
 │   │   ├── auto-answer/  # 自动问答插件 (核心)
 │   │   ├── demo/      # 示例插件
-│   │   ├── tool-listener/ # 工具监听
+│   │   ├── security-checker/ # 安全检查插件
 │   │   └── util/      # 工具函数
 │   ├── dist/          # 编译输出
 │   └── tsconfig.json
