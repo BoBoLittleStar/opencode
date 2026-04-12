@@ -1,6 +1,6 @@
 import type {Plugin} from "@opencode-ai/plugin";
 import {postQuestions} from './client';
-import {getLogger} from '../../../libs/dist/logger';
+import { getLogger } from '#libs/logger';
 
 function sessionIDToUUID(sessionID: string): string {
     let hash = 0;
@@ -13,11 +13,13 @@ function sessionIDToUUID(sessionID: string): string {
 }
 
 export const AutoAnswer: Plugin = async () => {
-    const logger = getLogger();
+    getLogger().info('[AutoAnswer] Plugin loaded!');
 
     return {
         'tool.execute.before': async (input, output: { args: unknown }) => {
-            if (input.tool === 'question' || input.tool === 'ask' || input.tool === 'gpt-ask') {
+            getLogger().info(`[AutoAnswer] tool.execute.before: tool="${input.tool}"`);
+            
+            if (input.tool === 'question' || input.tool === 'ask_user_question' || input.tool === 'askuserquestion') {
                 const args = output.args as {
                     questions?: Array<{
                         header: string;
@@ -45,8 +47,9 @@ export const AutoAnswer: Plugin = async () => {
                     try {
                         await postQuestions(questions);
                         messageSent = true;
+                        getLogger().info('[AutoAnswer] Questions posted successfully!');
                     } catch (err) {
-                        logger.error(`Failed to post questions: ${(err as Error).message}`);
+                        getLogger().error(`[AutoAnswer] Failed to post questions: ${(err as Error).message}`);
                     }
                     if (messageSent) {
                         throw new Error('问题已留言，请稍后，用户将尽快回答');

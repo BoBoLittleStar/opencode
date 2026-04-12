@@ -106,7 +106,10 @@ const TOOLS: Tool[] = [
         description: 'Get all questions with their answers',
         inputSchema: {
             type: 'object',
-            properties: {},
+            properties: {
+                source_id: { type: 'string', description: 'UUID of the source to filter by' },
+                include_answered: { type: 'boolean', description: 'Include answered questions (default: false)' }
+            },
             required: []
         }
     },
@@ -197,7 +200,19 @@ interface ToolResult {
 async function handleToolCall(toolName: string, args: unknown): Promise<ToolResult> {
     switch (toolName) {
         case 'get_questions': {
-            const result = await httpRequest('GET', '/api/questions');
+            const params = args as { source_id?: string; include_answered?: boolean };
+            let path = '/api/questions';
+            const queryParts: string[] = [];
+            if (params.source_id) {
+                queryParts.push(`source_id=${encodeURIComponent(params.source_id)}`);
+            }
+            if (params.include_answered) {
+                queryParts.push('include_answered=true');
+            }
+            if (queryParts.length > 0) {
+                path += '?' + queryParts.join('&');
+            }
+            const result = await httpRequest('GET', path);
             return {
                 content: [
                     {

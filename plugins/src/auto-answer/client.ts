@@ -1,7 +1,7 @@
 import http from 'http';
 import type { Option } from './types';
 
-export async function postQuestions(questions: { source_id: string; content: string; options: Option[]; multiple?: boolean }[]): Promise<void> {
+export async function postQuestions(questions: { group_id: string; source_id: string; content: string; options: Option[]; multiple?: boolean; createdAt?: string }[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({ questions });
     const options = {
