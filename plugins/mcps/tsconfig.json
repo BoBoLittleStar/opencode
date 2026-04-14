@@ -3,9 +3,12 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "declaration": true
+    "paths": {
+      "#libs/*": ["../libs/*.d.ts"]
+    }
   },
   "include": [
     "src/**/*"
-  ]
+  ],
+  "exclude": []
 }

@@ -6,21 +6,14 @@
   "author": "",
   "type": "commonjs",
   "main": "index.js",
-  "imports": {
-    "#libs/*": "./libs/dist/*"
-  },
   "scripts": {
-    "build:libs": "npx tsc -p libs/tsconfig.json",
-    "build:tools": "npx tsc -p tools/tsconfig.json",
-    "build:plugins": "npx tsc -p plugins/tsconfig.json",
-    "build:mcps": "npx tsc -p mcps/tsconfig.json",
-    "build": "npm run build:libs && npm run build:tools && npm run build:mcps && npm run build:plugins",
+    "build": "npx tsc -p plugins/tsconfig.json",
     "clean": "npx tsx scripts/clean.ts",
     "rebuild": "npm run clean && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "1.4.0",
+    "@opencode-ai/plugin": "1.4.3",
     "better-sqlite3": "^12.8.0"
   },
   "devDependencies": {

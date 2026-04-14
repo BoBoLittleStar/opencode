@@ -1,6 +1,6 @@
 import type {Plugin} from "@opencode-ai/plugin";
 import {postQuestions} from './client';
-import { getLogger } from '#libs/logger';
+import {getLogger} from '../libs/logger';
 
 function sessionIDToUUID(sessionID: string): string {
     let hash = 0;
@@ -18,7 +18,7 @@ export const AutoAnswer: Plugin = async () => {
     return {
         'tool.execute.before': async (input, output: { args: unknown }) => {
             getLogger().info(`[AutoAnswer] tool.execute.before: tool="${input.tool}"`);
-            
+
             if (input.tool === 'question' || input.tool === 'ask_user_question' || input.tool === 'askuserquestion') {
                 const args = output.args as {
                     questions?: Array<{

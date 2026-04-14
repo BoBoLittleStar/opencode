@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * MCP Auto Answer Adapter
- * 
+ *
  * MCP (Model Context Protocol) adapter for auto-answer.js
  * Implements JSON-RPC 2.0 protocol over stdin/stdout
  */
 
 import * as http from 'http';
-import { getLogger } from '#libs/logger';
+import {getLogger} from '../../src/libs/logger';
 
 const DEFAULT_PORT = 17346;
 
@@ -18,7 +18,7 @@ const BASE_URL = `http://localhost:${PORT}`;
 // MCP Protocol Implementation
 
 function sendResponse(id: string | number | undefined, result: unknown): void {
-    const response = { jsonrpc: '2.0', id, result };
+    const response = {jsonrpc: '2.0', id, result};
     process.stdout.write(JSON.stringify(response) + '\n');
 }
 
@@ -26,13 +26,13 @@ function sendError(id: string | number | undefined, code: number, message: strin
     const response = {
         jsonrpc: '2.0',
         id,
-        error: { code, message }
+        error: {code, message}
     };
     process.stdout.write(JSON.stringify(response) + '\n');
 }
 
 function sendNotification(method: string, params: unknown): void {
-    const notification = { jsonrpc: '2.0', method, params };
+    const notification = {jsonrpc: '2.0', method, params};
     process.stdout.write(JSON.stringify(notification) + '\n');
 }
 
@@ -40,17 +40,17 @@ function sendNotification(method: string, params: unknown): void {
 function httpRequest(method: string, path: string, body: unknown = null): Promise<unknown> {
     return new Promise((resolve, reject) => {
         const url = new URL(path, BASE_URL);
-        
+
         const postData = body ? JSON.stringify(body) : undefined;
-        
+
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
-        
+
         if (postData) {
             headers['Content-Length'] = String(Buffer.byteLength(postData));
         }
-        
+
         const options: http.RequestOptions = {
             hostname: '127.0.0.1',
             port: url.port,
@@ -60,22 +60,22 @@ function httpRequest(method: string, path: string, body: unknown = null): Promis
             timeout: 5000
         };
 
-        const req = http.request(options, (res) => {
+        const req = http.request(options, res => {
             let data = '';
-            res.on('data', (chunk) => data += chunk);
+            res.on('data', chunk => data += chunk);
             res.on('end', () => {
                 try {
                     resolve(JSON.parse(data));
                 } catch (e) {
-                    resolve({ raw: data });
+                    resolve({raw: data});
                 }
             });
         });
-        
-        req.on('error', (e) => {
+
+        req.on('error', e => {
             reject(e);
         });
-        
+
         req.on('timeout', () => {
             req.destroy();
             reject(new Error('Request timeout'));
@@ -84,7 +84,7 @@ function httpRequest(method: string, path: string, body: unknown = null): Promis
         if (postData) {
             req.write(postData);
         }
-        
+
         req.end();
     });
 }
@@ -107,8 +107,8 @@ const TOOLS: Tool[] = [
         inputSchema: {
             type: 'object',
             properties: {
-                source_id: { type: 'string', description: 'UUID of the source to filter by' },
-                include_answered: { type: 'boolean', description: 'Include answered questions (default: false)' }
+                source_id: {type: 'string', description: 'UUID of the source to filter by'},
+                include_answered: {type: 'boolean', description: 'Include answered questions (default: false)'}
             },
             required: []
         }
@@ -125,21 +125,21 @@ const TOOLS: Tool[] = [
                     items: {
                         type: 'object',
                         properties: {
-                            group_id: { type: 'string', description: 'UUID of the question group' },
-                            source_id: { type: 'string', description: 'UUID of the source' },
-                            content: { type: 'string', description: 'Question text' },
+                            group_id: {type: 'string', description: 'UUID of the question group'},
+                            source_id: {type: 'string', description: 'UUID of the source'},
+                            content: {type: 'string', description: 'Question text'},
                             options: {
                                 type: 'array',
                                 items: {
                                     type: 'object',
                                     properties: {
-                                        text: { type: 'string' },
-                                        isCorrect: { type: 'boolean' }
+                                        text: {type: 'string'},
+                                        isCorrect: {type: 'boolean'}
                                     },
                                     required: ['text']
                                 }
                             },
-                            multiple: { type: 'boolean', description: 'Allow multiple answers' }
+                            multiple: {type: 'boolean', description: 'Allow multiple answers'}
                         },
                         required: ['group_id', 'source_id', 'content', 'options']
                     }
@@ -160,10 +160,10 @@ const TOOLS: Tool[] = [
                     items: {
                         type: 'object',
                         properties: {
-                            group_id: { type: 'string', description: 'UUID of the question group' },
-                            questionId: { type: 'string', description: 'UUID of the question' },
-                            source_id: { type: 'string', description: 'UUID of the source' },
-                            answer: { type: 'string', description: 'Selected answer text' }
+                            group_id: {type: 'string', description: 'UUID of the question group'},
+                            questionId: {type: 'string', description: 'UUID of the question'},
+                            source_id: {type: 'string', description: 'UUID of the source'},
+                            answer: {type: 'string', description: 'Selected answer text'}
                         },
                         required: ['group_id', 'questionId', 'source_id']
                     }
@@ -320,7 +320,7 @@ async function handleRequest(method: string, params: unknown): Promise<unknown> 
         }
 
         case 'tools/call': {
-            const { name, arguments: args } = params as { name: string; arguments: unknown };
+            const {name, arguments: args} = params as { name: string; arguments: unknown };
             try {
                 const result = await handleToolCall(name, args);
                 return result;
@@ -343,9 +343,9 @@ process.stdin.setEncoding('utf-8');
 
 let buffer = '';
 
-process.stdin.on('data', async (chunk) => {
+process.stdin.on('data', async chunk => {
     buffer += chunk;
-    
+
     const lines = buffer.split('\n');
     buffer = lines.pop() || '';
 
@@ -354,7 +354,7 @@ process.stdin.on('data', async (chunk) => {
 
         try {
             const request = JSON.parse(line);
-            const { id, method, params } = request;
+            const {id, method, params} = request;
 
             if (method === 'initialize') {
                 const result = await handleRequest(method, params);
@@ -374,7 +374,8 @@ process.stdin.on('data', async (chunk) => {
             try {
                 const request = JSON.parse(line);
                 sendError(request.id, -32603, (err as Error).message);
-            } catch {}
+            } catch {
+            }
         }
     }
 });
@@ -383,12 +384,12 @@ process.stdin.on('end', () => {
     process.exit(0);
 });
 
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
     getLogger().error('Uncaught exception:', err);
     process.exit(1);
 });
 
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', err => {
     getLogger().error('Unhandled rejection:', err);
     process.exit(1);
 });

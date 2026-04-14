@@ -1,7 +1,7 @@
-import type {Plugin} from "@opencode-ai/plugin";
-import {getCurrentPID} from '#libs/process';
+import {Plugin, tool} from "@opencode-ai/plugin";
 import {execSync} from 'child_process';
 import * as os from 'os';
+import {getCurrentPID, traceParentProcessChain} from "../libs/process";
 
 /**
  * 获取 opencode 子进程 PID 列表
@@ -53,6 +53,22 @@ export const SecurityChecker: Plugin = async () => {
     const homeDir = os.homedir();
 
     return {
+        tool: {
+            "my-pid":
+                tool({
+                    description: "Get the current opencode process ID by tracing the parent process chain",
+                    args: {},
+                    async execute() {
+                        const result = traceParentProcessChain();
+
+                        if (result.opencodePID === result.currentPID || result.chain === '') {
+                            return `Current node PID: ${result.currentPID}\nOpencode PID: Not found\nChain: ${result.chain}`;
+                        }
+
+                        return `Current node PID: ${result.currentPID}\nOpencode PID: ${result.opencodePID}\nChain: ${result.chain}`;
+                    },
+                })
+        },
         'tool.execute.before': async (input, {args}) => {
             if (input.tool === 'bash') {
                 const bashArgs = args as { command?: string; commands?: string[] };

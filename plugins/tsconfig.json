@@ -1,13 +1,24 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "paths": {
-      "#libs/*": ["../libs/dist/*"]
-    }
+    "types": ["node"]
   },
   "include": [
     "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "mcps"
   ]
 }

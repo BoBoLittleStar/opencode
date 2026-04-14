@@ -1,8 +1,15 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const format = (date: Date) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}_${String(date.getHours()).padStart(2, '0')}_${String(date.getMinutes()).padStart(2, '0')}_${String(date.getSeconds()).padStart(2, '0')}`;
+const format = (time: Date) => {
+    const year = time.getFullYear();
+    let month = String(time.getMonth() + 1).padStart(2, '0');
+    let date = String(time.getDate()).padStart(2, '0');
+    let hours = String(time.getHours()).padStart(2, '0');
+    let minutes = String(time.getMinutes()).padStart(2, '0');
+    let seconds = String(time.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
+};
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 

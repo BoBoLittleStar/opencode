@@ -15,7 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {execSync} from 'child_process';
 import Database from 'better-sqlite3';
-import {getLogger} from '#libs/logger';
+import {getLogger} from '../../src/libs/logger';
 
 const DEFAULT_PORT = 17346;
 const CONFIG_DIR = process.env.OPENCODE_CONFIG_DIR || process.cwd();
