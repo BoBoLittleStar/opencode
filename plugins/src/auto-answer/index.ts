@@ -17,8 +17,6 @@ export const AutoAnswer: Plugin = async () => {
 
     return {
         'tool.execute.before': async (input, output: { args: unknown }) => {
-            getLogger().info(`[AutoAnswer] tool.execute.before: tool="${input.tool}"`);
-
             if (input.tool === 'question' || input.tool === 'ask_user_question' || input.tool === 'askuserquestion') {
                 const args = output.args as {
                     questions?: Array<{

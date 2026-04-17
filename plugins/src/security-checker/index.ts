@@ -2,6 +2,9 @@ import {Plugin, tool} from "@opencode-ai/plugin";
 import {execSync} from 'child_process';
 import * as os from 'os';
 import {getCurrentPID, traceParentProcessChain} from "../libs/process";
+import {clearRestartRequest, isRestartPending, requestRestart} from "../libs/restart";
+import * as child_process from "node:child_process";
+import {getLogger} from "../libs/logger";
 
 /**
  * 获取 opencode 子进程 PID 列表
@@ -46,7 +49,7 @@ function isProcessCommand(command: string): boolean {
     return /(?:stop|kill|terminate|ps|get-process|tasklist)\s+/i.test(command);
 }
 
-export const SecurityChecker: Plugin = async () => {
+export const SecurityChecker: Plugin = async ({client}) => {
     const currentPID = getCurrentPID();
     const childPIDs = getOpencodeChildPIDs();
     // 获取用户 home 目录
@@ -67,7 +70,19 @@ export const SecurityChecker: Plugin = async () => {
 
                         return `Current node PID: ${result.currentPID}\nOpencode PID: ${result.opencodePID}\nChain: ${result.chain}`;
                     },
-                })
+                }),
+            "restart":
+                tool({
+                    description: "Restart Opencode process and continue the last session",
+                    args: {},
+                    async execute() {
+                        if (isRestartPending()) {
+                            return "Restart already scheduled, waiting for session to be idle...";
+                        }
+                        requestRestart();
+                        return "Restart scheduled. Opencode will restart when the session is idle.";
+                    }
+                }),
         },
         'tool.execute.before': async (input, {args}) => {
             if (input.tool === 'bash') {
@@ -128,6 +143,18 @@ export const SecurityChecker: Plugin = async () => {
                             `检测到命令: ${command}`
                         );
                     }
+                }
+            }
+        },
+        event: async ({event}) => {
+            // Listen for session.idle event and execute pending restart
+            getLogger().info(event.type);
+            if (event.type === 'session.idle') {
+                if (isRestartPending()) {
+                    clearRestartRequest();
+                    child_process.spawn("bash", ["-l", "-c", "omo -c"], {
+                        env: { ...process.env, RESTARTED: "1" }
+                    });
                 }
             }
         }
