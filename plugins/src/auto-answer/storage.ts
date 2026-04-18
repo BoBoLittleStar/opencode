@@ -1,16 +1,16 @@
-import {execSync} from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import type {Option} from './types';
+import { execSync } from "child_process";
+import fs from "fs";
+import path from "path";
+import type { Option } from "./types";
 
 // Use OPENCODE_CONFIG_DIR or fallback to cwd()
 const CONFIG_DIR = process.env.OPENCODE_CONFIG_DIR || process.cwd();
-const DATA_DIR = path.join(CONFIG_DIR, '.auto-answer');
-const DB_DIR = path.join(DATA_DIR, 'database');
+const DATA_DIR = path.join(CONFIG_DIR, ".auto-answer");
+const DB_DIR = path.join(DATA_DIR, "database");
 
 // Resolve Python script path relative to this file's location
 const SCRIPT_DIR = path.dirname(path.resolve(__filename));
-const PYTHON_SCRIPT = path.join(SCRIPT_DIR, 'python', 'db.py');
+const PYTHON_SCRIPT = path.join(SCRIPT_DIR, "python", "db.py");
 
 export interface Question {
     id: string;
@@ -33,7 +33,7 @@ export interface Answer {
 
 function ensureDir(dirPath: string): void {
     if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, {recursive: true});
+        fs.mkdirSync(dirPath, { recursive: true });
     }
 }
 
@@ -41,13 +41,15 @@ function runPythonCommand(command: string, stdinData?: unknown): string {
     ensureDir(DB_DIR);
 
     // Use 'python' on Windows, 'python3' on Unix
-    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    const pythonCmd = process.platform === "win32" ? "python" : "python3";
     const args = [pythonCmd, PYTHON_SCRIPT, command];
-    const options: { input?: string; encoding: 'utf-8' } = {encoding: 'utf-8'};
+    const options: { input?: string; encoding: "utf-8" } = {
+        encoding: "utf-8",
+    };
 
     // Suppress stderr warning on Windows by redirecting to null
-    if (process.platform === 'win32') {
-        args.push('2>NUL');
+    if (process.platform === "win32") {
+        args.push("2>NUL");
     }
 
     if (stdinData !== undefined) {
@@ -55,7 +57,7 @@ function runPythonCommand(command: string, stdinData?: unknown): string {
     }
 
     try {
-        return execSync(args.join(' '), options);
+        return execSync(args.join(" "), options);
     } catch (error: unknown) {
         const err = error as { stdout?: string; stderr?: string };
         throw new Error(err.stdout || err.stderr || String(error));
@@ -71,15 +73,15 @@ function parseJsonOutput(output: string): unknown {
 }
 
 export function initDatabase(): void {
-    const output = runPythonCommand('init');
+    const output = runPythonCommand("init");
     const result = parseJsonOutput(output) as { error?: string };
     if (result.error) {
         throw new Error(result.error);
     }
 }
 
-export function addQuestions(questions: Omit<Question, 'id'>[]): void {
-    const data = questions.map((q) => ({
+export function addQuestions(questions: Omit<Question, "id">[]): void {
+    const data = questions.map(q => ({
         group_id: q.group_id,
         source_id: q.source_id,
         content: q.content,
@@ -88,7 +90,7 @@ export function addQuestions(questions: Omit<Question, 'id'>[]): void {
         created_at: q.createdAt,
     }));
 
-    const output = runPythonCommand('add_questions', data);
+    const output = runPythonCommand("add_questions", data);
     const result = parseJsonOutput(output) as { error?: string };
     if (result.error) {
         throw new Error(result.error);
@@ -113,13 +115,13 @@ function mapRowToAnswer(row: Record<string, unknown>): Answer {
         group_id: row.group_id as string,
         question_id: row.question_id as string,
         source_id: row.source_id as string,
-        answer: (row.answer as string) || '',
+        answer: row.answer as string || "",
         createdAt: row.created_at as string,
     };
 }
 
 export function getQuestions(): Question[] {
-    const output = runPythonCommand('get_questions');
+    const output = runPythonCommand("get_questions");
     const rows = parseJsonOutput(output) as Record<string, unknown>[];
     if (!Array.isArray(rows)) {
         return [];
@@ -128,8 +130,13 @@ export function getQuestions(): Question[] {
 }
 
 export function getLatestUnansweredGroup(sourceId: string): string | null {
-    const output = runPythonCommand('get_latest_unanswered_group', {source_id: sourceId});
-    const result = parseJsonOutput(output) as { group_id?: string; error?: string };
+    const output = runPythonCommand("get_latest_unanswered_group", {
+        source_id: sourceId,
+    });
+    const result = parseJsonOutput(output) as {
+        group_id?: string;
+        error?: string;
+    };
     if (result.error) {
         throw new Error(result.error);
     }
@@ -137,7 +144,9 @@ export function getLatestUnansweredGroup(sourceId: string): string | null {
 }
 
 export function getUnansweredQuestionsByGroup(groupId: string): Question[] {
-    const output = runPythonCommand('get_unanswered_by_group', {group_id: groupId});
+    const output = runPythonCommand("get_unanswered_by_group", {
+        group_id: groupId,
+    });
     const rows = parseJsonOutput(output) as Record<string, unknown>[];
     if (!Array.isArray(rows)) {
         return [];
@@ -154,8 +163,8 @@ export function getUnansweredQuestionsBySource(sourceId: string): Question[] {
     return getUnansweredQuestionsByGroup(groupId);
 }
 
-export function addAnswers(answers: Omit<Answer, 'id'>[]): void {
-    const data = answers.map((a) => ({
+export function addAnswers(answers: Omit<Answer, "id">[]): void {
+    const data = answers.map(a => ({
         group_id: a.group_id,
         question_id: a.question_id,
         source_id: a.source_id,
@@ -163,7 +172,7 @@ export function addAnswers(answers: Omit<Answer, 'id'>[]): void {
         created_at: a.createdAt,
     }));
 
-    const output = runPythonCommand('add_answers', data);
+    const output = runPythonCommand("add_answers", data);
     const result = parseJsonOutput(output) as { error?: string };
     if (result.error) {
         throw new Error(result.error);
@@ -171,7 +180,7 @@ export function addAnswers(answers: Omit<Answer, 'id'>[]): void {
 }
 
 export function getAnswers(): Answer[] {
-    const output = runPythonCommand('get_answers');
+    const output = runPythonCommand("get_answers");
     const rows = parseJsonOutput(output) as Record<string, unknown>[];
     if (!Array.isArray(rows)) {
         return [];
@@ -180,7 +189,9 @@ export function getAnswers(): Answer[] {
 }
 
 export function getAnswerByQuestionId(questionId: string): Answer | null {
-    const output = runPythonCommand('get_answer_by_question_id', {question_id: questionId});
+    const output = runPythonCommand("get_answer_by_question_id", {
+        question_id: questionId,
+    });
     const row = parseJsonOutput(output) as Record<string, unknown> | null;
     if (!row) {
         return null;
@@ -189,8 +200,11 @@ export function getAnswerByQuestionId(questionId: string): Answer | null {
 }
 
 export function cleanOldData(): number {
-    const output = runPythonCommand('clean_old_data');
-    const result = parseJsonOutput(output) as { deleted_questions?: number; error?: string };
+    const output = runPythonCommand("clean_old_data");
+    const result = parseJsonOutput(output) as {
+        deleted_questions?: number;
+        error?: string;
+    };
     if (result.error) {
         throw new Error(result.error);
     }

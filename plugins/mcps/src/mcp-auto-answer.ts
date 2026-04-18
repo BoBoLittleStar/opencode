@@ -6,8 +6,8 @@
  * Implements JSON-RPC 2.0 protocol over stdin/stdout
  */
 
-import * as http from 'http';
-import {getLogger} from '../../src/libs/logger';
+import * as http from "http";
+import { getLogger } from "../../src/libs/logger";
 
 const DEFAULT_PORT = 17346;
 
@@ -18,22 +18,22 @@ const BASE_URL = `http://localhost:${PORT}`;
 // MCP Protocol Implementation
 
 function sendResponse(id: string | number | undefined, result: unknown): void {
-    const response = {jsonrpc: '2.0', id, result};
-    process.stdout.write(JSON.stringify(response) + '\n');
+    const response = { jsonrpc: "2.0", id, result };
+    process.stdout.write(JSON.stringify(response) + "\n");
 }
 
 function sendError(id: string | number | undefined, code: number, message: string): void {
     const response = {
-        jsonrpc: '2.0',
+        jsonrpc: "2.0",
         id,
-        error: {code, message}
+        error: { code, message },
     };
-    process.stdout.write(JSON.stringify(response) + '\n');
+    process.stdout.write(JSON.stringify(response) + "\n");
 }
 
 function sendNotification(method: string, params: unknown): void {
-    const notification = {jsonrpc: '2.0', method, params};
-    process.stdout.write(JSON.stringify(notification) + '\n');
+    const notification = { jsonrpc: "2.0", method, params };
+    process.stdout.write(JSON.stringify(notification) + "\n");
 }
 
 // HTTP request helper
@@ -44,41 +44,41 @@ function httpRequest(method: string, path: string, body: unknown = null): Promis
         const postData = body ? JSON.stringify(body) : undefined;
 
         const headers: Record<string, string> = {
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
         };
 
         if (postData) {
-            headers['Content-Length'] = String(Buffer.byteLength(postData));
+            headers["Content-Length"] = String(Buffer.byteLength(postData));
         }
 
         const options: http.RequestOptions = {
-            hostname: '127.0.0.1',
+            hostname: "127.0.0.1",
             port: url.port,
             path: url.pathname,
             method: method,
             headers,
-            timeout: 5000
+            timeout: 5000,
         };
 
         const req = http.request(options, res => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
+            let data = "";
+            res.on("data", chunk => data += chunk);
+            res.on("end", () => {
                 try {
                     resolve(JSON.parse(data));
                 } catch (e) {
-                    resolve({raw: data});
+                    resolve({ raw: data });
                 }
             });
         });
 
-        req.on('error', e => {
+        req.on("error", e => {
             reject(e);
         });
 
-        req.on('timeout', () => {
+        req.on("timeout", () => {
             req.destroy();
-            reject(new Error('Request timeout'));
+            reject(new Error("Request timeout"));
         });
 
         if (postData) {
@@ -102,94 +102,94 @@ interface Tool {
 
 const TOOLS: Tool[] = [
     {
-        name: 'get_questions',
-        description: 'Get all questions with their answers',
+        name: "get_questions",
+        description: "Get all questions with their answers",
         inputSchema: {
-            type: 'object',
+            type: "object",
             properties: {
-                source_id: {type: 'string', description: 'UUID of the source to filter by'},
-                include_answered: {type: 'boolean', description: 'Include answered questions (default: false)'}
+                source_id: { type: "string", description: "UUID of the source to filter by" },
+                include_answered: { type: "boolean", description: "Include answered questions (default: false)" },
             },
-            required: []
-        }
+            required: [],
+        },
     },
     {
-        name: 'add_questions',
-        description: 'Add new questions to the database',
+        name: "add_questions",
+        description: "Add new questions to the database",
         inputSchema: {
-            type: 'object',
+            type: "object",
             properties: {
                 questions: {
-                    type: 'array',
-                    description: 'Array of question objects',
+                    type: "array",
+                    description: "Array of question objects",
                     items: {
-                        type: 'object',
+                        type: "object",
                         properties: {
-                            group_id: {type: 'string', description: 'UUID of the question group'},
-                            source_id: {type: 'string', description: 'UUID of the source'},
-                            content: {type: 'string', description: 'Question text'},
+                            group_id: { type: "string", description: "UUID of the question group" },
+                            source_id: { type: "string", description: "UUID of the source" },
+                            content: { type: "string", description: "Question text" },
                             options: {
-                                type: 'array',
+                                type: "array",
                                 items: {
-                                    type: 'object',
+                                    type: "object",
                                     properties: {
-                                        text: {type: 'string'},
-                                        isCorrect: {type: 'boolean'}
+                                        text: { type: "string" },
+                                        isCorrect: { type: "boolean" },
                                     },
-                                    required: ['text']
-                                }
+                                    required: ["text"],
+                                },
                             },
-                            multiple: {type: 'boolean', description: 'Allow multiple answers'}
+                            multiple: { type: "boolean", description: "Allow multiple answers" },
                         },
-                        required: ['group_id', 'source_id', 'content', 'options']
-                    }
-                }
+                        required: ["group_id", "source_id", "content", "options"],
+                    },
+                },
             },
-            required: ['questions']
-        }
+            required: ["questions"],
+        },
     },
     {
-        name: 'add_answers',
-        description: 'Submit answers to questions',
+        name: "add_answers",
+        description: "Submit answers to questions",
         inputSchema: {
-            type: 'object',
+            type: "object",
             properties: {
                 answers: {
-                    type: 'array',
-                    description: 'Array of answer objects',
+                    type: "array",
+                    description: "Array of answer objects",
                     items: {
-                        type: 'object',
+                        type: "object",
                         properties: {
-                            group_id: {type: 'string', description: 'UUID of the question group'},
-                            questionId: {type: 'string', description: 'UUID of the question'},
-                            source_id: {type: 'string', description: 'UUID of the source'},
-                            answer: {type: 'string', description: 'Selected answer text'}
+                            group_id: { type: "string", description: "UUID of the question group" },
+                            questionId: { type: "string", description: "UUID of the question" },
+                            source_id: { type: "string", description: "UUID of the source" },
+                            answer: { type: "string", description: "Selected answer text" },
                         },
-                        required: ['group_id', 'questionId', 'source_id']
-                    }
-                }
+                        required: ["group_id", "questionId", "source_id"],
+                    },
+                },
             },
-            required: ['answers']
-        }
+            required: ["answers"],
+        },
     },
     {
-        name: 'clean_old_data',
-        description: 'Clean old question data from the database',
+        name: "clean_old_data",
+        description: "Clean old question data from the database",
         inputSchema: {
-            type: 'object',
+            type: "object",
             properties: {},
-            required: []
-        }
+            required: [],
+        },
     },
     {
-        name: 'server_status',
-        description: 'Check if the server is running',
+        name: "server_status",
+        description: "Check if the server is running",
         inputSchema: {
-            type: 'object',
+            type: "object",
             properties: {},
-            required: []
-        }
-    }
+            required: [],
+        },
+    },
 ];
 
 interface ToolResult {
@@ -199,95 +199,95 @@ interface ToolResult {
 // Tool handlers
 async function handleToolCall(toolName: string, args: unknown): Promise<ToolResult> {
     switch (toolName) {
-        case 'get_questions': {
+        case "get_questions": {
             const params = args as { source_id?: string; include_answered?: boolean };
-            let path = '/api/questions';
+            let path = "/api/questions";
             const queryParts: string[] = [];
             if (params.source_id) {
                 queryParts.push(`source_id=${encodeURIComponent(params.source_id)}`);
             }
             if (params.include_answered) {
-                queryParts.push('include_answered=true');
+                queryParts.push("include_answered=true");
             }
             if (queryParts.length > 0) {
-                path += '?' + queryParts.join('&');
+                path += "?" + queryParts.join("&");
             }
-            const result = await httpRequest('GET', path);
+            const result = await httpRequest("GET", path);
             return {
                 content: [
                     {
-                        type: 'text',
-                        text: JSON.stringify(result, null, 2)
-                    }
-                ]
+                        type: "text",
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
             };
         }
 
-        case 'add_questions': {
+        case "add_questions": {
             if (!args || !(args as { questions?: unknown }).questions) {
-                throw new Error('Missing required parameter: questions');
+                throw new Error("Missing required parameter: questions");
             }
-            const result = await httpRequest('POST', '/api/questions', {
-                questions: (args as { questions: unknown }).questions
+            const result = await httpRequest("POST", "/api/questions", {
+                questions: (args as { questions: unknown }).questions,
             });
             return {
                 content: [
                     {
-                        type: 'text',
-                        text: JSON.stringify(result, null, 2)
-                    }
-                ]
+                        type: "text",
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
             };
         }
 
-        case 'add_answers': {
+        case "add_answers": {
             if (!args || !(args as { answers?: unknown }).answers) {
-                throw new Error('Missing required parameter: answers');
+                throw new Error("Missing required parameter: answers");
             }
-            const result = await httpRequest('POST', '/api/answers', {
-                answers: (args as { answers: unknown }).answers
+            const result = await httpRequest("POST", "/api/answers", {
+                answers: (args as { answers: unknown }).answers,
             });
             return {
                 content: [
                     {
-                        type: 'text',
-                        text: JSON.stringify(result, null, 2)
-                    }
-                ]
+                        type: "text",
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
             };
         }
 
-        case 'clean_old_data': {
-            const result = await httpRequest('POST', '/api/clean');
+        case "clean_old_data": {
+            const result = await httpRequest("POST", "/api/clean");
             return {
                 content: [
                     {
-                        type: 'text',
-                        text: JSON.stringify(result, null, 2)
-                    }
-                ]
+                        type: "text",
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
             };
         }
 
-        case 'server_status': {
+        case "server_status": {
             try {
-                await httpRequest('GET', '/api/questions');
+                await httpRequest("GET", "/api/questions");
                 return {
                     content: [
                         {
-                            type: 'text',
-                            text: `Server is running on port ${PORT}`
-                        }
-                    ]
+                            type: "text",
+                            text: `Server is running on port ${PORT}`,
+                        },
+                    ],
                 };
             } catch (err) {
                 return {
                     content: [
                         {
-                            type: 'text',
-                            text: `Server is not running on port ${PORT}`
-                        }
-                    ]
+                            type: "text",
+                            text: `Server is not running on port ${PORT}`,
+                        },
+                    ],
                 };
             }
         }
@@ -300,27 +300,27 @@ async function handleToolCall(toolName: string, args: unknown): Promise<ToolResu
 // MCP Protocol handlers
 async function handleRequest(method: string, params: unknown): Promise<unknown> {
     switch (method) {
-        case 'initialize': {
+        case "initialize": {
             return {
-                protocolVersion: '2024-11-05',
+                protocolVersion: "2024-11-05",
                 capabilities: {
-                    tools: {}
+                    tools: {},
                 },
                 serverInfo: {
-                    name: 'auto-answer-mcp',
-                    version: '1.0.0'
-                }
+                    name: "auto-answer-mcp",
+                    version: "1.0.0",
+                },
             };
         }
 
-        case 'tools/list': {
+        case "tools/list": {
             return {
-                tools: TOOLS
+                tools: TOOLS,
             };
         }
 
-        case 'tools/call': {
-            const {name, arguments: args} = params as { name: string; arguments: unknown };
+        case "tools/call": {
+            const { name, arguments: args } = params as { name: string; arguments: unknown };
             try {
                 const result = await handleToolCall(name, args);
                 return result;
@@ -329,7 +329,7 @@ async function handleRequest(method: string, params: unknown): Promise<unknown> 
             }
         }
 
-        case 'notifications/initialized': {
+        case "notifications/initialized": {
             return null;
         }
 
@@ -339,27 +339,27 @@ async function handleRequest(method: string, params: unknown): Promise<unknown> 
 }
 
 // Main message loop
-process.stdin.setEncoding('utf-8');
+process.stdin.setEncoding("utf-8");
 
-let buffer = '';
+let buffer = "";
 
-process.stdin.on('data', async chunk => {
+process.stdin.on("data", async chunk => {
     buffer += chunk;
 
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
 
     for (const line of lines) {
         if (!line.trim()) continue;
 
         try {
             const request = JSON.parse(line);
-            const {id, method, params} = request;
+            const { id, method, params } = request;
 
-            if (method === 'initialize') {
+            if (method === "initialize") {
                 const result = await handleRequest(method, params);
                 sendResponse(id, result);
-                sendNotification('notifications/initialized', {});
+                sendNotification("notifications/initialized", {});
             } else {
                 try {
                     const result = await handleRequest(method, params);
@@ -374,25 +374,24 @@ process.stdin.on('data', async chunk => {
             try {
                 const request = JSON.parse(line);
                 sendError(request.id, -32603, (err as Error).message);
-            } catch {
-            }
+            } catch {}
         }
     }
 });
 
-process.stdin.on('end', () => {
+process.stdin.on("end", () => {
     process.exit(0);
 });
 
-process.on('uncaughtException', err => {
-    getLogger().error('Uncaught exception:', err);
+process.on("uncaughtException", err => {
+    getLogger().error("Uncaught exception:", err);
     process.exit(1);
 });
 
-process.on('unhandledRejection', err => {
-    getLogger().error('Unhandled rejection:', err);
+process.on("unhandledRejection", err => {
+    getLogger().error("Unhandled rejection:", err);
     process.exit(1);
 });
 
-getLogger().info('MCP Auto Answer adapter started');
+getLogger().info("MCP Auto Answer adapter started");
 getLogger().info(`Target server: http://localhost:${PORT}`);

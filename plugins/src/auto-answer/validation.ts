@@ -1,5 +1,5 @@
-import {getLatestUnansweredGroup, getQuestions, getUnansweredQuestionsByGroup} from './storage';
-import type {Option} from './types';
+import { getLatestUnansweredGroup, getQuestions, getUnansweredQuestionsByGroup } from "./storage";
+import type { Option } from "./types";
 
 // UUID regex pattern
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -33,11 +33,8 @@ export function validateOptions(options: unknown): options is Option[] {
     if (!Array.isArray(options)) {
         return false;
     }
-    return options.every(opt =>
-        opt !== null &&
-        typeof opt === 'object' &&
-        'text' in opt &&
-        typeof (opt as Option).text === 'string'
+    return options.every(
+        opt => opt !== null && typeof opt === "object" && "text" in opt && typeof (opt as Option).text === "string",
     );
 }
 
@@ -45,18 +42,24 @@ export function validateOptions(options: unknown): options is Option[] {
  * Check which question IDs exist in database
  * @returns Object with valid and invalid question ID arrays
  */
-export function validateQuestionsExist(questionIds: string[]): { valid: string[]; invalid: string[] } {
+export function validateQuestionsExist(questionIds: string[]): {
+    valid: string[];
+    invalid: string[];
+} {
     const questions = getQuestions();
-    const questionSet = new Set(questions.map((q) => q.id));
+    const questionSet = new Set(questions.map(q => q.id));
 
-    return questionIds.reduce((acc, id) => {
-        if (questionSet.has(id)) {
-            acc.valid.push(id);
-        } else {
-            acc.invalid.push(id);
-        }
-        return acc;
-    }, {valid: [] as string[], invalid: [] as string[]});
+    return questionIds.reduce(
+        (acc, id) => {
+            if (questionSet.has(id)) {
+                acc.valid.push(id);
+            } else {
+                acc.invalid.push(id);
+            }
+            return acc;
+        },
+        { valid: [] as string[], invalid: [] as string[] },
+    );
 }
 
 /**

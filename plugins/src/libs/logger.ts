@@ -1,13 +1,13 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
 const format = (time: Date) => {
     const year = time.getFullYear();
-    let month = String(time.getMonth() + 1).padStart(2, '0');
-    let date = String(time.getDate()).padStart(2, '0');
-    let hours = String(time.getHours()).padStart(2, '0');
-    let minutes = String(time.getMinutes()).padStart(2, '0');
-    let seconds = String(time.getSeconds()).padStart(2, '0');
+    let month = String(time.getMonth() + 1).padStart(2, "0");
+    let date = String(time.getDate()).padStart(2, "0");
+    let hours = String(time.getHours()).padStart(2, "0");
+    let minutes = String(time.getMinutes()).padStart(2, "0");
+    let seconds = String(time.getSeconds()).padStart(2, "0");
     return `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
 };
 
@@ -18,9 +18,9 @@ class Logger {
     private readonly baseName: string;
     private readonly basePath: string;
 
-    constructor(logName: string = 'bobolittlestar-opencode') {
+    constructor(logName: string = "bobolittlestar-opencode") {
         const configDir = process.env.OPENCODE_CONFIG_DIR || process.cwd();
-        this.baseDir = path.join(configDir, 'logs');
+        this.baseDir = path.join(configDir, "logs");
         this.baseName = logName;
         this.basePath = path.join(this.baseDir, `${logName}.log`);
     }
@@ -48,7 +48,7 @@ class Logger {
 
     private ensureDir(): void {
         if (!fs.existsSync(this.baseDir)) {
-            fs.mkdirSync(this.baseDir, {recursive: true});
+            fs.mkdirSync(this.baseDir, { recursive: true });
         }
     }
 
@@ -56,7 +56,7 @@ class Logger {
         this.ensureDir();
         const time = format(new Date());
         messages.forEach(message => {
-            const logMessage = `[${time}] [${level.toUpperCase()}] ${typeof message === 'object' ? JSON.stringify(message) : message}\n`;
+            const logMessage = `[${time}] [${level.toUpperCase()}] ${typeof message === "object" ? JSON.stringify(message) : message}\n`;
             if (fs.existsSync(this.basePath)) {
                 const stats = fs.statSync(this.basePath);
                 if (stats.size >= MAX_FILE_SIZE) {
@@ -68,19 +68,19 @@ class Logger {
     }
 
     debug(...messages: unknown[]): void {
-        this.write('debug', ...messages);
+        this.write("debug", ...messages);
     }
 
     info(...messages: unknown[]): void {
-        this.write('info', ...messages);
+        this.write("info", ...messages);
     }
 
     warn(...messages: unknown[]): void {
-        this.write('warn', ...messages);
+        this.write("warn", ...messages);
     }
 
     error(...messages: unknown[]): void {
-        this.write('error', ...messages);
+        this.write("error", ...messages);
     }
 }
 
