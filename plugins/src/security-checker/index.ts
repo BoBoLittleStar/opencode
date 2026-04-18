@@ -1,77 +1,89 @@
 import { Plugin, tool } from "@opencode-ai/plugin";
 import { execSync } from "child_process";
-import * as os from "os";
-import { getCurrentPID, traceParentProcessChain } from "../libs/process";
-import { clearRestartRequest, isRestartPending, requestRestart } from "../libs/restart";
 import * as child_process from "node:child_process";
+import * as os from "os";
 import { getLogger } from "../libs/logger";
+import { getCurrentPID, traceParentProcessChain } from "../libs/process";
 
-/**
- * 获取 opencode 子进程 PID 列表
- */
-function getOpencodeChildPIDs(): number[] {
-    try {
+export const SecurityChecker: Plugin = async ({ client, $ }) => {
+    const params: { pending: boolean; env: RestartParam } = {
+        pending: false,
+        env: {
+            OPENCODE_RESTART_SESSION_ID: "",
+            OPENCODE_RESTART_AGENT: "",
+            OPENCODE_RESTART_LAST_PID: "",
+        },
+    };
+
+    type RestartParam = {
+        OPENCODE_RESTART_SESSION_ID: string;
+        OPENCODE_RESTART_AGENT: string;
+        OPENCODE_RESTART_LAST_PID: string;
+    };
+
+    /**
+     * 获取 opencode 子进程 PID 列表
+     */
+    function getOpencodeChildPIDs(): number[] {
         const out = execSync(`powershell -Command "Get-OpencodeChildProcessId"`, {
             encoding: "utf8",
             windowsHide: true,
         });
         return out.trim().split("\n").filter(Boolean).map(Number);
-    } catch {
-        return [];
     }
-}
 
-/**
- * 判断命令是否为 powershell 命令
- * 匹配 powershell 或 ps 开头，或者包含 -Command 参数
- */
-function isPowerShellCommand(command: string): boolean {
-    const trimmed = command.trim().toLowerCase();
-    // powershell.exe, pwsh, ps 等开头
-    if (/^(powershell|pwsh|ps)\s*\.?exe?/i.test(trimmed)) {
-        return true;
+    /**
+     * 检测是否为进程结束/查看命令
+     */
+    function isProcessCommand(command: string): boolean {
+        return /(?:stop|kill|terminate|ps|get-process|tasklist)\s+/i.test(command);
     }
-    // -Command 或 -C 参数
-    if (/-[cc]\s+["']|["']\s+-c\b/i.test(command)) {
-        return true;
-    }
-    // -Command= 格式
-    if (/-command=/i.test(trimmed)) {
-        return true;
-    }
-    return false;
-}
 
-/**
- * 检测是否为进程结束/查看命令
- */
-function isProcessCommand(command: string): boolean {
-    return /(?:stop|kill|terminate|ps|get-process|tasklist)\s+/i.test(command);
-}
+    /**
+     * 判断命令是否为 powershell 命令
+     * 匹配 powershell 或 ps 开头，或者包含 -Command 参数
+     */
+    function isPowerShellCommand(command: string): boolean {
+        const trimmed = command.trim().toLowerCase();
+        // powershell.exe, pwsh, ps 等开头
+        if (/^(powershell|pwsh|ps)\s*\.?exe?/i.test(trimmed)) {
+            return true;
+        }
+        // -Command 或 -C 参数
+        if (/-c\s+["']|["']\s+-c\b/i.test(command)) {
+            return true;
+        }
+        // -Command= 格式
+        return /-command=/i.test(trimmed);
+    }
 
-export const SecurityChecker: Plugin = async ({ client, $ }) => {
     const currentPID = getCurrentPID();
     const childPIDs = getOpencodeChildPIDs();
     // 获取用户 home 目录
     const homeDir = os.homedir();
-
-    if (process.env.OPENCODE_RESTART_SESSION_ID) {
-        if (process.env.OPENCODE_LAST_PID) {
-            await $`powershell -Command "Stop-Process -Id ${process.env.OPENCODE_LAST_PID}"`;
+    const restartParam = process.env as RestartParam;
+    if (restartParam.OPENCODE_RESTART_SESSION_ID) {
+        if (restartParam.OPENCODE_RESTART_LAST_PID) {
+            $`powershell -Command "Stop-Process -Id ${restartParam.OPENCODE_RESTART_LAST_PID}"`.catch(
+                getLogger().error,
+            );
         }
-        client.session.promptAsync({
-            path: {
-                id: process.env.OPENCODE_RESTART_SESSION_ID,
-            },
-            body: {
-                parts: [
-                    {
-                        type: "text",
-                        text: "Opencode restarted successfully. You can now resume your work.",
-                    },
-                ],
-            },
-        });
+        client.session
+            .promptAsync({
+                path: {
+                    id: restartParam.OPENCODE_RESTART_SESSION_ID,
+                },
+                body: {
+                    agent: restartParam.OPENCODE_RESTART_AGENT,
+                    parts: [
+                        {
+                            type: "text",
+                            text: "Opencode restarted successfully. You can now resume your work.",
+                        },
+                    ],
+                },
+            })
+            .catch(getLogger().error);
     }
 
     return {
@@ -92,20 +104,25 @@ export const SecurityChecker: Plugin = async ({ client, $ }) => {
             restart_opencode: tool({
                 description: "Restart Opencode process and continue the last session",
                 args: {},
-                async execute() {
-                    if (isRestartPending()) {
+                async execute({}, { agent }) {
+                    if (params.pending) {
                         return "Restart already scheduled, please don't repeat the request.";
                     }
-                    requestRestart();
+                    params.pending = true;
+                    params.env.OPENCODE_RESTART_AGENT = agent;
                     return "Restart scheduled, please stop your work immediately.";
                 },
             }),
         },
-        "tool.execute.before": async (input, { args }) => {
-            if (isRestartPending()) {
-                throw new Error("Please stop your work immediately and wait for restart.");
+        "tool.execute.before": async ({ tool }, { args }) => {
+            if (params.pending) {
+                throw new Error(
+                    tool === "restart_opencode"
+                        ? "Restart already scheduled, please don't repeat the request"
+                        : "Please stop your work immediately and wait for restart.",
+                );
             }
-            if (input.tool === "bash") {
+            if (tool === "bash") {
                 const bashArgs = args as {
                     command?: string;
                     commands?: string[];
@@ -174,30 +191,19 @@ export const SecurityChecker: Plugin = async ({ client, $ }) => {
         },
         event: async ({ event }) => {
             // Listen for session.idle event and execute pending restart
-            if (event.type === "session.idle") {
-                if (isRestartPending()) {
-                    clearRestartRequest();
-                    const env = {
-                        ...process.env,
-                        OPENCODE_LAST_PID: `${process.pid}`,
-                        OPENCODE_RESTART_SESSION_ID: event.properties.sessionID,
-                    };
+            if (event.type === "session.idle" && params.pending) {
+                params.env.OPENCODE_RESTART_SESSION_ID = event.properties.sessionID;
+                params.env.OPENCODE_RESTART_LAST_PID = `${process.pid}`;
+                const env = { ...process.env, ...params.env };
+                child_process.spawn("wt", ["powershell", "-Command", "omo -c"], { env }).on("error", (err: any) => {
+                    if (err.code !== "ENOENT") {
+                        getLogger().error(err);
+                        return;
+                    }
                     child_process
-                        .spawn("wt", ["powershell", "-Command", "omo -c"], {
-                            env,
-                        })
-                        .on("error", (err: any) => {
-                            if (err.code === "ENOENT") {
-                                child_process
-                                    .spawn("bash", ["-l", "-c", "omo -c"], {
-                                        env,
-                                    })
-                                    .on("error", (err: any) => {
-                                        getLogger().error("No available shell environments to restart omo!");
-                                    });
-                            }
-                        });
-                }
+                        .spawn("bash", ["-l", "-c", "omo -c"], { env })
+                        .on("error", () => getLogger().error("No available shell environments to restart omo!"));
+                });
             }
         },
     };
