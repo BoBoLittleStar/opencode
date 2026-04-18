@@ -4,6 +4,7 @@ import * as os from 'os';
 import {getCurrentPID, traceParentProcessChain} from "../libs/process";
 import {clearRestartRequest, isRestartPending, requestRestart} from "../libs/restart";
 import * as child_process from "node:child_process";
+import {getLogger} from "../libs/logger";
 
 /**
  * 获取 opencode 子进程 PID 列表
@@ -48,13 +49,17 @@ function isProcessCommand(command: string): boolean {
     return /(?:stop|kill|terminate|ps|get-process|tasklist)\s+/i.test(command);
 }
 
-export const SecurityChecker: Plugin = async ({client}) => {
+export const SecurityChecker: Plugin = async ({client, $}) => {
+    getLogger().info(process.pid);
     const currentPID = getCurrentPID();
     const childPIDs = getOpencodeChildPIDs();
     // 获取用户 home 目录
     const homeDir = os.homedir();
 
     if (process.env.OPENCODE_RESTART_SESSION_ID) {
+        if (process.env.OPENCODE_LAST_PID) {
+            $`powershell -Command "Stop-Process -Id ${process.env.OPENCODE_LAST_PID}"`
+        }
         client.session.promptAsync({
             path: {
                 id: process.env.OPENCODE_RESTART_SESSION_ID,
@@ -71,7 +76,7 @@ export const SecurityChecker: Plugin = async ({client}) => {
 
     return {
         tool: {
-            "my-pid":
+            "get_opencode_pid":
                 tool({
                     description: "Get the current opencode process ID by tracing the parent process chain",
                     args: {},
@@ -85,7 +90,7 @@ export const SecurityChecker: Plugin = async ({client}) => {
                         return `Current node PID: ${result.currentPID}\nOpencode PID: ${result.opencodePID}\nChain: ${result.chain}`;
                     },
                 }),
-            "restart":
+            "restart_opencode":
                 tool({
                     description: "Restart Opencode process and continue the last session",
                     args: {},
@@ -166,7 +171,11 @@ export const SecurityChecker: Plugin = async ({client}) => {
                 if (isRestartPending()) {
                     clearRestartRequest();
                     child_process.spawn("bash", ["-l", "-c", "omo -c"], {
-                        env: {...process.env, OPENCODE_RESTART_SESSION_ID: event.properties.sessionID}
+                        env: {
+                            ...process.env,
+                            OPENCODE_LAST_PID: `${process.pid}`,
+                            OPENCODE_RESTART_SESSION_ID: event.properties.sessionID
+                        }
                     });
                 }
             }
