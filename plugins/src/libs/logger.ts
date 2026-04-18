@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as os from "node:os";
 import * as path from "path";
 
 const format = (time: Date) => {
@@ -29,7 +30,7 @@ class Logger {
         if (!fs.existsSync(this.baseDir)) return 1;
         const files = fs.readdirSync(this.baseDir);
         let maxIndex = 0;
-        files.forEach(file => {
+        files.forEach((file) => {
             const match = file.match(new RegExp(`^${this.baseName}-(\\d+)\\.log$`));
             if (match) {
                 const idx = parseInt(match[1], 10);
@@ -52,19 +53,35 @@ class Logger {
         }
     }
 
+    private getFrom(): string {
+        const stack = new Error().stack;
+        if (stack) {
+            const from = stack
+                .split("\n")
+                .map((line) => line.trim())
+                .filter((line) => line.startsWith("at") && !line.includes("logger"))
+                .map((line) => /.*\((.*):\d+:\d+\)/.exec(line)?.[1]);
+            if (from?.length && from[0]) {
+                return from[0].replaceAll(process.env.OPENCODE_CONFIG_DIR!, "").replaceAll("\\", "/");
+            }
+        }
+        return "null";
+    }
+
     private write(level: string, ...messages: unknown[]): void {
         this.ensureDir();
+        const from = this.getFrom();
         const time = format(new Date());
-        messages.forEach(message => {
-            const logMessage = `[${time}] [${level.toUpperCase()}] ${typeof message === "object" ? JSON.stringify(message) : message}\n`;
-            if (fs.existsSync(this.basePath)) {
-                const stats = fs.statSync(this.basePath);
-                if (stats.size >= MAX_FILE_SIZE) {
-                    this.rotateLog();
-                }
+        const message = messages
+            .map((message) => `${typeof message === "object" ? JSON.stringify(message) : message}`)
+            .join(os.EOL);
+        if (fs.existsSync(this.basePath)) {
+            const stats = fs.statSync(this.basePath);
+            if (stats.size >= MAX_FILE_SIZE) {
+                this.rotateLog();
             }
-            fs.appendFileSync(this.basePath, logMessage);
-        });
+        }
+        fs.appendFileSync(this.basePath, `[${time}] [${level.toUpperCase()}] ${from} - ${message}${os.EOL}`);
     }
 
     debug(...messages: unknown[]): void {

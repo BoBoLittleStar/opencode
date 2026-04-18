@@ -1,6 +1,6 @@
 import type { Plugin } from "@opencode-ai/plugin";
-import { postQuestions } from "./client";
 import { getLogger } from "../libs/logger";
+import { postQuestions } from "./client";
 
 function sessionIDToUUID(sessionID: string): string {
     let hash = 0;
@@ -30,11 +30,11 @@ export const AutoAnswer: Plugin = async () => {
                     const source_id = input.sessionID ? sessionIDToUUID(input.sessionID) : crypto.randomUUID();
                     // Generate a group_id for this batch of questions
                     const group_id = crypto.randomUUID();
-                    const questions = args.questions.map(q => ({
+                    const questions = args.questions.map((q) => ({
                         group_id,
                         source_id,
                         content: q.question,
-                        options: q.options.map(opt => ({
+                        options: q.options.map((opt) => ({
                             text: opt.label,
                             description: opt.description || "",
                         })),

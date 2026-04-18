@@ -10,11 +10,11 @@
  *   npx tsx auto-answer.ts --foreground     # Run in foreground (keep terminal)
  */
 
-import * as http from "http";
-import * as fs from "fs";
-import * as path from "path";
-import { execSync } from "child_process";
 import Database from "better-sqlite3";
+import { execSync } from "child_process";
+import * as fs from "fs";
+import * as http from "http";
+import * as path from "path";
 import { getLogger } from "../../src/libs/logger";
 
 const DEFAULT_PORT = 17346;
@@ -89,7 +89,7 @@ function getDb(): Database.Database {
 function parseBody(req: http.IncomingMessage): Promise<unknown> {
     return new Promise((resolve, reject) => {
         let body = "";
-        req.on("data", chunk => body += chunk);
+        req.on("data", (chunk) => (body += chunk));
         req.on("end", () => {
             try {
                 resolve(body ? JSON.parse(body) : {});
@@ -108,7 +108,7 @@ function sendJson(res: http.ServerResponse, statusCode: number, data: unknown): 
 
 // Check if server is running
 async function isRunningSync(): Promise<boolean> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         const net = require("net");
         const client = new net.Socket();
         client.connect(port, "127.0.0.1", () => {
@@ -190,10 +190,10 @@ function createServer(): http.Server {
                 // Filter out answered questions unless include_answered is true
                 // Note: answer is NULL in DB, but better-sqlite3 may return undefined
                 if (!includeAnswered) {
-                    questions = questions.filter(q => !q.answer);
+                    questions = questions.filter((q) => !q.answer);
                 }
 
-                const result = questions.map(q => ({
+                const result = questions.map((q) => ({
                     ...q,
                     options: JSON.parse(q.options),
                 }));
@@ -205,7 +205,7 @@ function createServer(): http.Server {
 
             // POST /api/questions
             if (method === "POST" && url === "/api/questions") {
-                const body = await parseBody(req) as { questions: unknown[] };
+                const body = (await parseBody(req)) as { questions: unknown[] };
                 const questions = body.questions;
 
                 if (!questions || !Array.isArray(questions)) {
@@ -261,7 +261,7 @@ function createServer(): http.Server {
 
             // POST /api/answers
             if (method === "POST" && url === "/api/answers") {
-                const body = await parseBody(req) as { answers: unknown[] };
+                const body = (await parseBody(req)) as { answers: unknown[] };
                 const answers = body.answers;
 
                 if (!answers || !Array.isArray(answers)) {
@@ -281,7 +281,7 @@ function createServer(): http.Server {
                         return sendJson(res, 400, { error: "Missing questionId" });
                     }
                     // Answer length limit: 100 chars
-                    const answerText = answer.answer as string || "";
+                    const answerText = (answer.answer as string) || "";
                     if (answerText.length > 100) {
                         return sendJson(res, 400, { error: "Answer exceeds 100 characters" });
                     }
@@ -313,7 +313,7 @@ function createServer(): http.Server {
                     .all(groupId, sourceId) as { id: string }[];
 
                 const answeredQuestionIds = new Set(
-                    (answers as Record<string, unknown>[]).map(a => a.questionId as string),
+                    (answers as Record<string, unknown>[]).map((a) => a.questionId as string),
                 );
 
                 for (const q of allQuestionsInGroup) {
@@ -336,7 +336,7 @@ function createServer(): http.Server {
 
                 for (const a of answers) {
                     const answer = a as Record<string, unknown>;
-                    updateStmt.run(answer.answer as string || "", now, answer.questionId);
+                    updateStmt.run((answer.answer as string) || "", now, answer.questionId);
                 }
 
                 db.close();
@@ -352,11 +352,11 @@ function createServer(): http.Server {
                 const result = db
                     .prepare(
                         `
-                    DELETE
-                    FROM questions
-                    WHERE group_id IS NULL
-                       OR group_id = ''
-                `,
+                            DELETE
+                            FROM questions
+                            WHERE group_id IS NULL
+                               OR group_id = ''
+                        `,
                     )
                     .run();
 

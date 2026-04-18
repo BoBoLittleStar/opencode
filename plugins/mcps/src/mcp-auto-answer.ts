@@ -60,9 +60,9 @@ function httpRequest(method: string, path: string, body: unknown = null): Promis
             timeout: 5000,
         };
 
-        const req = http.request(options, res => {
+        const req = http.request(options, (res) => {
             let data = "";
-            res.on("data", chunk => data += chunk);
+            res.on("data", (chunk) => (data += chunk));
             res.on("end", () => {
                 try {
                     resolve(JSON.parse(data));
@@ -72,7 +72,7 @@ function httpRequest(method: string, path: string, body: unknown = null): Promis
             });
         });
 
-        req.on("error", e => {
+        req.on("error", (e) => {
             reject(e);
         });
 
@@ -343,7 +343,7 @@ process.stdin.setEncoding("utf-8");
 
 let buffer = "";
 
-process.stdin.on("data", async chunk => {
+process.stdin.on("data", async (chunk) => {
     buffer += chunk;
 
     const lines = buffer.split("\n");
@@ -383,12 +383,12 @@ process.stdin.on("end", () => {
     process.exit(0);
 });
 
-process.on("uncaughtException", err => {
+process.on("uncaughtException", (err) => {
     getLogger().error("Uncaught exception:", err);
     process.exit(1);
 });
 
-process.on("unhandledRejection", err => {
+process.on("unhandledRejection", (err) => {
     getLogger().error("Unhandled rejection:", err);
     process.exit(1);
 });
