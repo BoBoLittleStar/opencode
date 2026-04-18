@@ -40,7 +40,7 @@
     }
   },
   "plugin": [
-    "oh-my-openagent",
+    "oh-my-opencode@3.14.0",
     "./plugins/dist"
   ]
 }

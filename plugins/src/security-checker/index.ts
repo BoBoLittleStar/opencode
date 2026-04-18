@@ -4,7 +4,6 @@ import * as os from 'os';
 import {getCurrentPID, traceParentProcessChain} from "../libs/process";
 import {clearRestartRequest, isRestartPending, requestRestart} from "../libs/restart";
 import * as child_process from "node:child_process";
-import {getLogger} from "../libs/logger";
 
 /**
  * 获取 opencode 子进程 PID 列表
@@ -54,6 +53,21 @@ export const SecurityChecker: Plugin = async ({client}) => {
     const childPIDs = getOpencodeChildPIDs();
     // 获取用户 home 目录
     const homeDir = os.homedir();
+
+    if (process.env.OPENCODE_RESTART_SESSION_ID) {
+        client.session.promptAsync({
+            path: {
+                id: process.env.OPENCODE_RESTART_SESSION_ID,
+            }, body: {
+                parts: [
+                    {
+                        type: 'text',
+                        text: 'OpenCode 已重启'
+                    }
+                ]
+            }
+        });
+    }
 
     return {
         tool: {
@@ -148,12 +162,11 @@ export const SecurityChecker: Plugin = async ({client}) => {
         },
         event: async ({event}) => {
             // Listen for session.idle event and execute pending restart
-            getLogger().info(event.type);
             if (event.type === 'session.idle') {
                 if (isRestartPending()) {
                     clearRestartRequest();
                     child_process.spawn("bash", ["-l", "-c", "omo -c"], {
-                        env: { ...process.env, RESTARTED: "1" }
+                        env: {...process.env, OPENCODE_RESTART_SESSION_ID: event.properties.sessionID}
                     });
                 }
             }
