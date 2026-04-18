@@ -5,7 +5,7 @@ import * as os from "os";
 import { getLogger } from "../libs/logger";
 import { getCurrentPID, traceParentProcessChain } from "../libs/process";
 
-export const SecurityChecker: Plugin = async ({ client, $ }) => {
+export const AA_SecurityChecker: Plugin = async ({ client, $ }) => {
     const params: { pending: boolean; env: RestartParam } = {
         pending: false,
         env: {

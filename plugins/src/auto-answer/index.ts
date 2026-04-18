@@ -12,9 +12,7 @@ function sessionIDToUUID(sessionID: string): string {
     return `${hashHex.slice(0, 8)}-${hashHex.slice(8, 12)}-${hashHex.slice(12, 16)}-${hashHex.slice(16, 20)}-${hashHex.slice(20, 32)}`;
 }
 
-export const AutoAnswer: Plugin = async () => {
-    getLogger().info("[AutoAnswer] Plugin loaded!");
-
+export const CA_AutoAnswer: Plugin = async () => {
     return {
         "tool.execute.before": async (input, output: { args: unknown }) => {
             if (input.tool === "question" || input.tool === "ask_user_question" || input.tool === "askuserquestion") {
