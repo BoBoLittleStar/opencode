@@ -68,20 +68,32 @@ class Logger {
         return "null";
     }
 
+    private toString(message: any) {
+        return `${typeof message === "object" ? JSON.stringify(message) : message}`;
+    }
+
     private write(level: string, ...messages: unknown[]): void {
         this.ensureDir();
         const from = this.getFrom();
         const time = format(new Date());
         const message = messages
-            .map((message) => `${typeof message === "object" ? JSON.stringify(message) : message}`)
-            .join(os.EOL);
-        if (fs.existsSync(this.basePath)) {
-            const stats = fs.statSync(this.basePath);
-            if (stats.size >= MAX_FILE_SIZE) {
-                this.rotateLog();
-            }
+            .filter((message) => !(message instanceof Promise))
+            .map(this.toString)
+            .join(os.EOL)
+            .trim();
+        if (fs.existsSync(this.basePath) && fs.statSync(this.basePath).size >= MAX_FILE_SIZE) {
+            this.rotateLog();
         }
-        fs.appendFileSync(this.basePath, `[${time}] [${level.toUpperCase()}] ${from} - ${message}${os.EOL}`);
+        message && fs.appendFileSync(this.basePath, `[${time}] [${level.toUpperCase()}] ${from} - ${message}${os.EOL}`);
+        Promise.all(
+            messages.filter((callback) => callback instanceof Promise).map((callback) => callback.then(this.toString)),
+        )
+            .then((result) => result.join(os.EOL).trim())
+            .then(
+                (result) =>
+                    result &&
+                    fs.appendFileSync(this.basePath, `[${time}] [${level.toUpperCase()}] ${from} - ${result}${os.EOL}`),
+            );
     }
 
     debug(...messages: unknown[]): void {

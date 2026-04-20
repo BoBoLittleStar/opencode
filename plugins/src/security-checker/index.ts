@@ -9,15 +9,13 @@ export const AA_SecurityChecker: Plugin = async ({ client, $ }) => {
     const params: { pending: boolean; env: RestartParam } = {
         pending: false,
         env: {
-            OPENCODE_RESTART_SESSION_ID: "",
-            OPENCODE_RESTART_AGENT: "",
+            OPENCODE_RESTART: "0",
             OPENCODE_RESTART_LAST_PID: "",
         },
     };
 
     type RestartParam = {
-        OPENCODE_RESTART_SESSION_ID: string;
-        OPENCODE_RESTART_AGENT: string;
+        OPENCODE_RESTART: "0" | "1";
         OPENCODE_RESTART_LAST_PID: string;
     };
 
@@ -61,29 +59,38 @@ export const AA_SecurityChecker: Plugin = async ({ client, $ }) => {
     const childPIDs = getOpencodeChildPIDs();
     // 获取用户 home 目录
     const homeDir = os.homedir();
-    const restartParam = process.env as RestartParam;
-    if (restartParam.OPENCODE_RESTART_SESSION_ID) {
-        if (restartParam.OPENCODE_RESTART_LAST_PID) {
-            $`powershell -Command "Stop-Process -Id ${restartParam.OPENCODE_RESTART_LAST_PID}"`.catch(
-                getLogger().error,
-            );
-        }
-        client.session
-            .promptAsync({
-                path: {
-                    id: restartParam.OPENCODE_RESTART_SESSION_ID,
-                },
-                body: {
-                    agent: restartParam.OPENCODE_RESTART_AGENT,
-                    parts: [
-                        {
-                            type: "text",
-                            text: "Opencode restarted successfully. You can now resume your work.",
-                        },
-                    ],
-                },
-            })
-            .catch(getLogger().error);
+    const { OPENCODE_RESTART, OPENCODE_RESTART_LAST_PID } = process.env as RestartParam;
+    if (OPENCODE_RESTART === "1") {
+        client.session.list().then((list) => {
+            if (list.data?.[0]) {
+                const sessionId = list.data[0].id;
+                if (OPENCODE_RESTART_LAST_PID) {
+                    $`powershell -Command "Stop-Process -Id ${OPENCODE_RESTART_LAST_PID}"`.catch(getLogger().error);
+                }
+                client.session
+                    .messages({ path: { id: sessionId } })
+                    .then(
+                        (messages) =>
+                            (messages.data?.find((message) => message.info.role === "assistant")?.info as any)?.agent,
+                    )
+                    .then((agent) => {
+                        client.session
+                            .promptAsync({
+                                path: { id: sessionId },
+                                body: {
+                                    agent,
+                                    parts: [
+                                        {
+                                            type: "text",
+                                            text: "Opencode restarted successfully. You can now resume your work.",
+                                        },
+                                    ],
+                                },
+                            })
+                            .catch(getLogger().error);
+                    });
+            }
+        });
     }
 
     return {
@@ -109,7 +116,6 @@ export const AA_SecurityChecker: Plugin = async ({ client, $ }) => {
                         return "Restart already scheduled, please don't repeat the request.";
                     }
                     params.pending = true;
-                    params.env.OPENCODE_RESTART_AGENT = agent;
                     return "Restart scheduled, please stop your work immediately.";
                 },
             }),
@@ -192,7 +198,7 @@ export const AA_SecurityChecker: Plugin = async ({ client, $ }) => {
         event: async ({ event }) => {
             // Listen for session.idle event and execute pending restart
             if (event.type === "session.idle" && params.pending) {
-                params.env.OPENCODE_RESTART_SESSION_ID = event.properties.sessionID;
+                params.env.OPENCODE_RESTART = "1";
                 params.env.OPENCODE_RESTART_LAST_PID = `${process.pid}`;
                 const env = { ...process.env, ...params.env };
                 child_process.spawn("wt", ["powershell", "-Command", "omo -c"], { env }).on("error", (err: any) => {
