@@ -1,8 +1,6 @@
 import { Plugin, tool } from "@opencode-ai/plugin";
 import { getLogger } from "../libs/logger";
 
-// Track sessions that have been marked as done
-const sessionsDone = new Set<string>();
 // Track the last agent for each session
 const sessionsAgent = new Map<string, string>();
 
@@ -28,12 +26,13 @@ export const BC_IdleReminder: Plugin = async (input) => {
         },
         event: async ({ event }) => {
             // Track the last agent from assistant messages
-            if (event.type === "message.updated") {
-                if (event.properties.info.role === "user") {
-                    if (event.properties.info.agent) {
-                        sessionsAgent.set(event.properties.info.sessionID, event.properties.info.agent);
-                    }
-                }
+            if (
+                event.type === "message.updated" &&
+                event.properties.info.role === "user" &&
+                event.properties.info.agent &&
+                !sessionsAgent.has(event.properties.info.sessionID)
+            ) {
+                sessionsAgent.set(event.properties.info.sessionID, event.properties.info.agent);
             }
 
             // Handle idle event - only if session not marked as done
@@ -43,11 +42,6 @@ export const BC_IdleReminder: Plugin = async (input) => {
                 } else if (event.properties.status.type === "idle") {
                     state.busy = false;
                     const { sessionID } = event.properties;
-
-                    // Skip if already marked as done
-                    if (sessionsDone.delete(sessionID)) {
-                        return;
-                    }
 
                     await new Promise((resolve) => setTimeout(resolve, 3000));
                     if (state.busy) {
@@ -59,6 +53,7 @@ export const BC_IdleReminder: Plugin = async (input) => {
                     }
 
                     const agent = sessionsAgent.get(sessionID);
+                    sessionsAgent.delete(sessionID);
                     await client.session.prompt({
                         path: { id: sessionID },
                         body: {
