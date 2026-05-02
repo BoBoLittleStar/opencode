@@ -4,6 +4,8 @@ import { getLogger } from "../libs/logger";
 
 // Track sessions that have been marked as done
 const sessionsDone = new Set<string>();
+// Track the last agent for each session
+const sessionsAgent = new Map<string, string>();
 
 export const BC_IdleReminder: Plugin = async (input) => {
     const logger = getLogger();
@@ -27,6 +29,14 @@ export const BC_IdleReminder: Plugin = async (input) => {
                 }
             }
 
+            // Track the last agent from assistant messages
+            if (event.type === "message.updated") {
+                const { message } = event.properties as any;
+                if (message.info.role === "assistant" && message.info.agent) {
+                    sessionsAgent.set(message.sessionID, message.info.agent);
+                }
+            }
+
             // Handle idle event - only if session not marked as done
             if (event.type === "session.idle") {
                 const { sessionID } = event.properties;
@@ -38,10 +48,16 @@ export const BC_IdleReminder: Plugin = async (input) => {
 
                 await new Promise((resolve) => setTimeout(resolve, 3000));
 
-                logger.info(`Sending reminder to session ${sessionID}`);
+                const agent = sessionsAgent.get(sessionID);
+                logger.info(
+                    agent
+                        ? `Sending reminder to session ${sessionID} with agent: ${agent}`
+                        : `Sending reminder to session ${sessionID} without specific agent`,
+                );
                 await client.session.prompt({
                     path: { id: sessionID },
                     body: {
+                        ...(agent ? { agent } : {}),
                         parts: [{ type: "text", text: "你已经做完了吗" } as TextPartInput],
                     },
                 });
