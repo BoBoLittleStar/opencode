@@ -1,10 +1,11 @@
 /**
  * Check if x matches y according to matching rules:
  * 1. Empty vs non-empty → fail
- * 2. Type mismatch → fail
- * 3. Non-object types: value not equal → fail
- * 4. Object: x contains all keys of y, recursively match each value
- * 5. Array: same length, recursively match each element
+ * 2. y is a function → execute with x, return result
+ * 3. Type mismatch → fail
+ * 4. Non-object types: value not equal → fail
+ * 5. Object: x contains all keys of y, recursively match each value
+ * 6. Array: same length, recursively match each element
  *
  * @param x - The value to check
  * @param y - The pattern/value to match against
@@ -23,7 +24,12 @@ export function isMatch(x: unknown, y: unknown): boolean {
         return true;
     }
 
-    // Rule 2: Type mismatch
+    // Rule 2: If y is a function, execute with x and check the result
+    if (typeof y === "function") {
+        return (y as (val: unknown) => boolean)(x);
+    }
+
+    // Rule 3: Type mismatch
     const xType = Array.isArray(x) ? "array" : typeof x;
     const yType = Array.isArray(y) ? "array" : typeof y;
     if (xType !== yType) {

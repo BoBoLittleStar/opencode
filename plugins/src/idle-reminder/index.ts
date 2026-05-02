@@ -1,5 +1,4 @@
 import { Plugin, tool } from "@opencode-ai/plugin";
-import { TextPart, TextPartInput } from "@opencode-ai/sdk";
 import { getLogger } from "../libs/logger";
 
 // Track sessions that have been marked as done
@@ -8,50 +7,41 @@ const sessionsDone = new Set<string>();
 const sessionsAgent = new Map<string, string>();
 
 export const BC_IdleReminder: Plugin = async (input) => {
-    const logger = getLogger();
     const client = input.client;
     const state = {
         busy: false,
-        remind: false,
+        remind: true,
     };
 
     return {
         tool: {
-            status_update: tool({
-                description: "Update your working status. This tool must be called only when explicitly requested.",
-                args: {
-                    status: tool.schema.enum(["in progress", "completed", "failed"]).describe("current working status"),
-                },
+            reminder_stop: tool({
+                description:
+                    "Set work to completed to disable auto-reminder. This tool must be called only when explicitly requested.",
+                args: {},
                 execute: async ({ status }, context) => {
-                    if (status === "completed") {
-                        state.remind = false;
-                    }
+                    state.remind = false;
+                    getLogger().info("set state remind to false");
                     return "ok";
                 },
             }),
         },
         event: async ({ event }) => {
-            // Listen for AI text part updates and check if marked as done
-            if (event.type === "message.part.updated") {
-                const { part } = event.properties;
-                if (part.type === "text") {
-                    const textPart = part as TextPart;
-                    const text = textPart.text || "";
-
-                    if (text.startsWith("是")) {
-                        sessionsDone.add(textPart.sessionID);
-                        logger.info(
-                            `Session ${textPart.sessionID} marked as done based on: "${text.substring(0, 50)}..."`,
-                        );
+            // Track the last agent from assistant messages
+            if (event.type === "message.updated") {
+                if (event.properties.info.role === "user") {
+                    if (event.properties.info.agent) {
+                        sessionsAgent.set(event.properties.info.sessionID, event.properties.info.agent);
                     }
                 }
             }
 
-            // Track the last agent from assistant messages
-            if (event.type === "message.updated") {
-                const { message } = event.properties as any;
-                if (message.info.role === "user" && message.info.agent) {
-                    sessionsAgent.set(message.sessionID, message.info.agent);
+            if (event.type === "message.part.updated") {
+                if (event.properties.part.type === "text") {
+                    const type = event.properties.part.metadata?.type;
+                    if (type !== "auto") {
+                        state.remind = true;
+                    }
                 }
             }
 
@@ -59,7 +49,6 @@ export const BC_IdleReminder: Plugin = async (input) => {
             if (event.type === "session.status") {
                 if (event.properties.status.type === "busy") {
                     state.busy = true;
-                    state.remind = true;
                 } else if (event.properties.status.type === "idle") {
                     state.busy = false;
                     const { sessionID } = event.properties;
@@ -82,8 +71,11 @@ export const BC_IdleReminder: Plugin = async (input) => {
                             parts: [
                                 {
                                     type: "text",
-                                    text: "[Reminder] If you have finished your work, please call `status_update` tool.",
-                                } as TextPartInput,
+                                    text: "[自动提醒] 如果你认为已经回答了所有问题或者完成了所有工作，你必须调用 reminder_stop 工具以停止此自动提醒",
+                                    metadata: {
+                                        type: "auto",
+                                    },
+                                },
                             ],
                         },
                     });

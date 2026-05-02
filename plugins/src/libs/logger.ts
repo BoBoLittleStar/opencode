@@ -69,7 +69,7 @@ class Logger {
     }
 
     private toString(message: any) {
-        return `${typeof message === "object" ? JSON.stringify(message) : message}`;
+        return `${typeof message === "object" ? JSON.stringify(message, null, 2) : message}`;
     }
 
     private write(level: string, ...messages: unknown[]): void {

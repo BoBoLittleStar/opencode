@@ -10,13 +10,13 @@ export const BA_ToolListener: Plugin = async () => {
             if (blocks.some((block) => "tool" in block && isMatch({ tool, input }, block.tool))) {
                 return;
             }
-            logger.info("Executing tool", tool, "with input", input);
+            logger.info(`Executing tool: ${tool}`, input);
         },
         event: async ({ event }) => {
             if (blocks.some((block) => "event" in block && isMatch(event, block.event))) {
                 return;
             }
-            logger.info(event.type, event.properties);
+            logger.info(`Event type: ${event.type}`, event.properties);
         },
     };
 };
