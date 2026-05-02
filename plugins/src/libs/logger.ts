@@ -113,5 +113,7 @@ class Logger {
     }
 }
 
-const logger = new Logger();
-export const getLogger = () => logger;
+export const getLogger = (() => {
+    const logger = new Logger();
+    return () => logger;
+})();
