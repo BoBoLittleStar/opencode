@@ -1,7 +1,7 @@
 import { Plugin } from "@opencode-ai/plugin";
 import { getLogger } from "../libs/logger";
 
-export const EA_Demo: Plugin = async () => {
+export const BA_ToolListener: Plugin = async () => {
     const logger = getLogger();
     return {
         "tool.execute.before": async ({ tool }, input) => {

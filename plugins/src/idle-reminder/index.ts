@@ -5,7 +5,7 @@ import { getLogger } from "../libs/logger";
 // Track sessions that have been marked as done
 const sessionsDone = new Set<string>();
 
-export const BB_IdleReminder: Plugin = async (input) => {
+export const BC_IdleReminder: Plugin = async (input) => {
     const logger = getLogger();
     const client = input.client;
 

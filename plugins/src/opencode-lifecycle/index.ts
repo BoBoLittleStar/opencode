@@ -2,7 +2,7 @@ import { Plugin, tool } from "@opencode-ai/plugin";
 import child_process from "node:child_process";
 import { getLogger } from "../libs/logger";
 
-export const BA_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
+export const BB_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
     const params: { pending: boolean; env: RestartParam } = {
         pending: false,
         env: {
