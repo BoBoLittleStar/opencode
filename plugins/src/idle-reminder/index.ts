@@ -19,7 +19,7 @@ export const BC_IdleReminder: Plugin = async (input) => {
                 description:
                     "Set work to completed to disable auto-reminder. This tool must be called only when explicitly requested.",
                 args: {},
-                execute: async ({ status }, context) => {
+                execute: async () => {
                     state.remind = false;
                     getLogger().info("set state remind to false");
                     return "ok";
@@ -32,15 +32,6 @@ export const BC_IdleReminder: Plugin = async (input) => {
                 if (event.properties.info.role === "user") {
                     if (event.properties.info.agent) {
                         sessionsAgent.set(event.properties.info.sessionID, event.properties.info.agent);
-                    }
-                }
-            }
-
-            if (event.type === "message.part.updated") {
-                if (event.properties.part.type === "text") {
-                    const type = event.properties.part.metadata?.type;
-                    if (type !== "auto") {
-                        state.remind = true;
                     }
                 }
             }
@@ -58,8 +49,12 @@ export const BC_IdleReminder: Plugin = async (input) => {
                         return;
                     }
 
-                    await new Promise((resolve) => setTimeout(resolve, 10000));
-                    if (state.busy || !state.remind) {
+                    await new Promise((resolve) => setTimeout(resolve, 3000));
+                    if (state.busy) {
+                        return;
+                    }
+                    if (!state.remind) {
+                        state.remind = true;
                         return;
                     }
 
@@ -72,9 +67,6 @@ export const BC_IdleReminder: Plugin = async (input) => {
                                 {
                                     type: "text",
                                     text: "[自动提醒] 如果你认为已经回答了所有问题或者完成了所有工作，你必须调用 reminder_stop 工具以停止此自动提醒",
-                                    metadata: {
-                                        type: "auto",
-                                    },
                                 },
                             ],
                         },
