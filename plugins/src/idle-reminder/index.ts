@@ -1,5 +1,4 @@
 import { Plugin, tool } from "@opencode-ai/plugin";
-import { getLogger } from "../libs/logger";
 
 // Track the last agent for each session
 const sessionsAgent = new Map<string, string>();
@@ -19,7 +18,6 @@ export const BC_IdleReminder: Plugin = async (input) => {
                 args: {},
                 execute: async () => {
                     state.remind = false;
-                    getLogger().info("set state remind to false");
                     return "ok";
                 },
             }),

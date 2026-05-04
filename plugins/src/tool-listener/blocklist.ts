@@ -8,12 +8,12 @@ type Blocker =
     | {
           tool: {
               tool: string;
-              input?: {
+              args?: {
                   [p: string]: any;
               };
           };
       };
-export const blocks: Blocker[] = [
+export const blocklist: Blocker[] = [
     {
         event: {
             type: "tui.toast.show",
