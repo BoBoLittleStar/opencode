@@ -11,7 +11,11 @@ export const BA_ToolListener: Plugin = async () => {
             if (blocklist.some((block) => "tool" in block && isMatch({ tool, args }, block.tool))) {
                 return;
             }
-            logger.info(args && Object.keys(args) ? [...`Executing tool: ${tool}`, args] : `Executing tool: ${tool}`);
+            if (args && Object.keys(args).length) {
+                logger.info(`Executing tool: ${tool}`, args);
+            } else {
+                logger.info(`Executing tool: ${tool}`);
+            }
         },
         event: async ({ event }) => {
             if (blocklist.some((item) => "event" in item && isMatch(event, item.event))) {
