@@ -43,7 +43,10 @@ class Logger {
     private rotateLog(): void {
         const index = this.getNextArchiveIndex();
         const archivePath = path.join(this.baseDir, `${this.baseName}-${index}.log`);
-        fs.renameSync(this.basePath, archivePath);
+        // copyFileSync + truncate works on Windows even when the file is open,
+        // whereas renameSync would fail with EBUSY/EPERM on an in-use file.
+        fs.copyFileSync(this.basePath, archivePath);
+        fs.writeFileSync(this.basePath, "");
         this.info(`Log rotated to ${archivePath}`);
     }
 
