@@ -8,6 +8,7 @@ export const BC_IdleReminder: Plugin = async (input) => {
     const state = {
         busy: false,
         remind: true,
+        suppressNextIdle: false,
     };
 
     return {
@@ -33,12 +34,28 @@ export const BC_IdleReminder: Plugin = async (input) => {
                 sessionsAgent.set(event.properties.info.sessionID, event.properties.info.agent);
             }
 
+            // Suppress next idle reminder when user manually aborted
+            if (event.type === "session.error") {
+                const error = event.properties.error;
+                if (error?.name === "MessageAbortedError" && error?.data?.message === "Aborted") {
+                    state.suppressNextIdle = true;
+                    return;
+                }
+            }
+
             // Handle idle event - only if session not marked as done
             if (event.type === "session.status") {
                 if (event.properties.status.type === "busy") {
                     state.busy = true;
                 } else if (event.properties.status.type === "idle") {
                     state.busy = false;
+
+                    // User manually aborted - don't auto-send message
+                    if (state.suppressNextIdle) {
+                        state.suppressNextIdle = false;
+                        return;
+                    }
+
                     const { sessionID } = event.properties;
 
                     await new Promise((resolve) => setTimeout(resolve, 3000));
