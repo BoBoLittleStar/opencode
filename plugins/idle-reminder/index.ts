@@ -1,4 +1,5 @@
 import { Plugin, tool } from "@opencode-ai/plugin";
+import { globalState } from "../shared/state";
 
 // Track the last agent for each session
 const sessionsAgent = new Map<string, string>();
@@ -58,6 +59,11 @@ export const BC_IdleReminder: Plugin = async (input) => {
 
                     const { sessionID } = event.properties;
 
+                    // Restart pending - don't send auto-reminder
+                    if (globalState["restart-pending"]) {
+                        return;
+                    }
+
                     await new Promise((resolve) => setTimeout(resolve, 3000));
                     if (state.busy) {
                         return;
@@ -76,7 +82,7 @@ export const BC_IdleReminder: Plugin = async (input) => {
                             parts: [
                                 {
                                     type: "text",
-                                    text: "[自动提醒] 如果你认为已经回答了所有问题或者完成了所有工作，你必须调用 reminder_stop 工具以停止此自动提醒",
+                                    text: "[自动提醒] 如果你认为已经回答完毕所有问题，或是完成了所有工作，或是需要用户的进一步输入，你必须调用 reminder_stop 工具以停止此自动提醒",
                                 },
                             ],
                         },

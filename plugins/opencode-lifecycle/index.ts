@@ -1,6 +1,7 @@
 import { Plugin, tool } from "@opencode-ai/plugin";
 import child_process from "node:child_process";
 import { getLogger } from "../libs/logger";
+import { globalState } from "../shared/state";
 
 export const BB_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
     const params: { pending: boolean; env: RestartParam } = {
@@ -59,6 +60,7 @@ export const BB_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
                         return "Restart already scheduled, please don't repeat the request.";
                     }
                     params.pending = true;
+                    globalState["restart-pending"] = true;
                     return "Restart scheduled, please stop your work immediately.";
                 },
             }),

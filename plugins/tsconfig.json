@@ -8,18 +8,14 @@
     "strict": true,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "declaration": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "noEmit": true,
     "types": ["node"]
   },
   "include": [
-    "src/**/*"
+    "**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "mcps",
-    "src/test"
+    "test"
   ]
 }
