@@ -29,7 +29,15 @@
     }
   },
   "plugin": [
-    "oh-my-opencode@3.14.0",
-    "./plugins"
-  ]
+    "oh-my-opencode@3.14.0"
+  ],
+  "watcher": {
+    "ignore": [
+      ".idea",
+      ".git",
+      "node_modules",
+      "logs",
+      "bun.lock"
+    ]
+  }
 }

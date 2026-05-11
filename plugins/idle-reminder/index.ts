@@ -3,13 +3,14 @@ import { globalState } from "../shared/state";
 
 // Track the last agent for each session
 const sessionsAgent = new Map<string, string>();
+// Track sessions that were aborted by user (per-session, survives event timing issues)
+const abortedSessions = new Set<string>();
 
 export const BC_IdleReminder: Plugin = async (input) => {
     const client = input.client;
     const state = {
         busy: false,
         remind: true,
-        suppressNextIdle: false,
     };
 
     return {
@@ -35,11 +36,14 @@ export const BC_IdleReminder: Plugin = async (input) => {
                 sessionsAgent.set(event.properties.info.sessionID, event.properties.info.agent);
             }
 
-            // Suppress next idle reminder when user manually aborted
+            // Track user-initiated aborts — don't auto-reply after abort
             if (event.type === "session.error") {
                 const error = event.properties.error;
-                if (error?.name === "MessageAbortedError" && error?.data?.message === "Aborted") {
-                    state.suppressNextIdle = true;
+                // MessageAbortedError is the definitive signal for user-initiated abort
+                if (error?.name === "MessageAbortedError") {
+                    if (event.properties.sessionID) {
+                        abortedSessions.add(event.properties.sessionID);
+                    }
                     return;
                 }
             }
@@ -51,13 +55,13 @@ export const BC_IdleReminder: Plugin = async (input) => {
                 } else if (event.properties.status.type === "idle") {
                     state.busy = false;
 
-                    // User manually aborted - don't auto-send message
-                    if (state.suppressNextIdle) {
-                        state.suppressNextIdle = false;
+                    const { sessionID } = event.properties;
+
+                    // Check immediately if session was aborted by user
+                    if (abortedSessions.has(sessionID)) {
+                        abortedSessions.delete(sessionID);
                         return;
                     }
-
-                    const { sessionID } = event.properties;
 
                     // Restart pending - don't send auto-reminder
                     if (globalState["restart-pending"]) {
@@ -70,6 +74,13 @@ export const BC_IdleReminder: Plugin = async (input) => {
                     }
                     if (!state.remind) {
                         state.remind = true;
+                        return;
+                    }
+
+                    // Re-check after delay: session.error may arrive after session.status(idle)
+                    // This handles the timing edge case where error event is slightly delayed
+                    if (abortedSessions.has(sessionID)) {
+                        abortedSessions.delete(sessionID);
                         return;
                     }
 
