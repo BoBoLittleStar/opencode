@@ -26,7 +26,18 @@ export const BC_IdleReminder: Plugin = async (input) => {
             }),
         },
         event: async ({ event }) => {
-            // Track the last agent from assistant messages
+            // Assistant message has error → response was interrupted (stop/new msg/etc.)
+            // More reliable than session.error: error is embedded in the message itself
+            if (
+                event.type === "message.updated" &&
+                event.properties.info.role === "assistant" &&
+                event.properties.info.error &&
+                event.properties.sessionID
+            ) {
+                abortedSessions.add(event.properties.sessionID);
+            }
+
+            // Track the last agent from the session for routing reminder to correct agent
             if (
                 event.type === "message.updated" &&
                 event.properties.info.role === "user" &&
