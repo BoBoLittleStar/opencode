@@ -6,8 +6,7 @@ const sessionsAgent = new Map<string, string>();
 // Track sessions that were aborted by user (per-session, survives event timing issues)
 const abortedSessions = new Set<string>();
 
-export const BC_IdleReminder: Plugin = async (input) => {
-    const client = input.client;
+export const BC_IdleReminder: Plugin = async ({ client }) => {
     const state = {
         busy: false,
         remind: true,
@@ -31,10 +30,12 @@ export const BC_IdleReminder: Plugin = async (input) => {
             if (
                 event.type === "message.updated" &&
                 event.properties.info.role === "assistant" &&
-                event.properties.info.error &&
-                event.properties.sessionID
+                event.properties.info.error
             ) {
-                abortedSessions.add(event.properties.sessionID);
+                const sessionID = (event.properties as { sessionID?: string }).sessionID;
+                if (sessionID) {
+                    abortedSessions.add(sessionID);
+                }
             }
 
             // Track the last agent from the session for routing reminder to correct agent

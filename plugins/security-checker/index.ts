@@ -1,6 +1,6 @@
 import { Plugin, tool } from "@opencode-ai/plugin";
-import { execSync } from "child_process";
-import * as os from "os";
+import { execSync } from "node:child_process";
+import * as os from "node:os";
 import { getCurrentPID, traceParentProcessChain } from "../libs/process";
 import {
     isProcessCommand,
@@ -9,7 +9,7 @@ import {
     checkProcessPIDKill,
 } from "./checker";
 
-export const AA_SecurityChecker: Plugin = async ({ client, $ }) => {
+export const AA_SecurityChecker: Plugin = async () => {
     /**
      * 获取 opencode 子进程 PID 列表
      */

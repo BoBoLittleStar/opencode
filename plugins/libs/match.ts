@@ -36,12 +36,12 @@ export function isMatch(x: unknown, y: unknown): boolean {
         return false;
     }
 
-    // Rule 3: Non-object types (primitive comparison)
+    // Rule 4: Non-object types (primitive comparison)
     if (xType !== "object" && xType !== "array") {
         return x === y;
     }
 
-    // Rule 4: Object type - x must contain all keys of y, recursively match
+    // Rule 5: Object type - x must contain all keys of y, recursively match
     if (xType === "object" && yType === "object") {
         const xObj = x as Record<string, unknown>;
         const yObj = y as Record<string, unknown>;
@@ -52,7 +52,7 @@ export function isMatch(x: unknown, y: unknown): boolean {
         return yKeys.every((key) => isMatch(xObj[key], yObj[key]));
     }
 
-    // Rule 5: Array type - same length, recursively match each element
+    // Rule 6: Array type - same length, recursively match each element
     if (xType === "array" && yType === "array") {
         const xArr = x as unknown[];
         const yArr = y as unknown[];

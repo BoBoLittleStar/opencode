@@ -3,6 +3,11 @@ import child_process from "node:child_process";
 import { getLogger } from "../libs/logger";
 import { globalState } from "../shared/state";
 
+type RestartParam = {
+    OPENCODE_RESTART: "0" | "1";
+    OPENCODE_RESTART_LAST_PID: string;
+};
+
 export const BB_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
     const params: { pending: boolean; env: RestartParam } = {
         pending: false,
@@ -12,43 +17,39 @@ export const BB_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
         },
     };
 
-    type RestartParam = {
-        OPENCODE_RESTART: "0" | "1";
-        OPENCODE_RESTART_LAST_PID: string;
-    };
-
     const { OPENCODE_RESTART, OPENCODE_RESTART_LAST_PID } = process.env as RestartParam;
     if (OPENCODE_RESTART === "1") {
-        client.session.list().then((list) => {
-            if (list.data?.[0]) {
-                const sessionId = list.data[0].id;
+        (async () => {
+            try {
+                const list = await client.session.list();
+                const session = list.data?.[0];
+                if (!session) return;
+
+                const sessionId = session.id;
                 if (OPENCODE_RESTART_LAST_PID) {
-                    $`powershell -Command "Stop-Process -Id ${OPENCODE_RESTART_LAST_PID}"`.catch(getLogger().error);
+                    await $`powershell -Command "Stop-Process -Id ${OPENCODE_RESTART_LAST_PID}"`;
                 }
-                client.session
-                    .messages({ path: { id: sessionId } })
-                    .then(
-                        (messages) =>
-                            (messages.data?.find((message) => message.info.role === "assistant")?.info as any)?.agent,
-                    )
-                    .then((agent) => {
-                        client.session
-                            .promptAsync({
-                                path: { id: sessionId },
-                                body: {
-                                    agent,
-                                    parts: [
-                                        {
-                                            type: "text",
-                                            text: "Opencode restarted successfully. You can now resume your work.",
-                                        },
-                                    ],
-                                },
-                            })
-                            .catch(getLogger().error);
-                    });
+
+                const messages = await client.session.messages({ path: { id: sessionId } });
+                const assistantMessage = messages.data?.find((m) => m.info.role === "assistant");
+                const agent = (assistantMessage?.info as { agent?: string })?.agent;
+
+                await client.session.promptAsync({
+                    path: { id: sessionId },
+                    body: {
+                        agent,
+                        parts: [
+                            {
+                                type: "text",
+                                text: "Opencode restarted successfully. You can now resume your work.",
+                            },
+                        ],
+                    },
+                });
+            } catch (err) {
+                getLogger().error(err);
             }
-        });
+        })();
     }
     return {
         tool: {
@@ -80,7 +81,7 @@ export const BB_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
                 params.env.OPENCODE_RESTART = "1";
                 params.env.OPENCODE_RESTART_LAST_PID = `${process.pid}`;
                 const env = { ...process.env, ...params.env };
-                child_process.spawn("wt", ["powershell", "-Command", "omo -c"], { env }).on("error", (err: any) => {
+                child_process.spawn("wt", ["powershell", "-Command", "omo -c"], { env }).on("error", (err: NodeJS.ErrnoException) => {
                     if (err.code !== "ENOENT") {
                         getLogger().error(err);
                         return;

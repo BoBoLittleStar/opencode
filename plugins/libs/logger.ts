@@ -1,14 +1,14 @@
-import * as fs from "fs";
+import * as fs from "node:fs";
 import * as os from "node:os";
-import * as path from "path";
+import * as path from "node:path";
 
 const format = (time: Date) => {
     const year = time.getFullYear();
-    let month = String(time.getMonth() + 1).padStart(2, "0");
-    let date = String(time.getDate()).padStart(2, "0");
-    let hours = String(time.getHours()).padStart(2, "0");
-    let minutes = String(time.getMinutes()).padStart(2, "0");
-    let seconds = String(time.getSeconds()).padStart(2, "0");
+    const month = String(time.getMonth() + 1).padStart(2, "0");
+    const date = String(time.getDate()).padStart(2, "0");
+    const hours = String(time.getHours()).padStart(2, "0");
+    const minutes = String(time.getMinutes()).padStart(2, "0");
+    const seconds = String(time.getSeconds()).padStart(2, "0");
     return `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
 };
 
