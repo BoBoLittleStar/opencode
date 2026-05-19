@@ -66,16 +66,16 @@ export const BB_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
             if (event.type === "session.idle" && params.pending) {
                 params.env.OPENCODE_RESTART = "1";
                 params.env.OPENCODE_RESTART_LAST_PID = `${process.pid}`;
-                const env = { ...process.env, ...params.env };
+                process.env = { ...process.env, ...params.env };
                 child_process
-                    .spawn("wt", ["powershell", "-Command", "omo -c"], { env })
+                    .spawn("wt", ["powershell", "-Command", "omo -c"], { env: process.env })
                     .on("error", (err: NodeJS.ErrnoException) => {
                         if (err.code !== "ENOENT") {
                             getLogger().error(err);
                             return;
                         }
                         child_process
-                            .spawn("bash", ["-l", "-c", "omo -c"], { env })
+                            .spawn("bash", ["-l", "-c", "omo -c"], { env: process.env })
                             .on("error", () => getLogger().error("No available shell environments to restart omo!"));
                     });
             }
