@@ -2,60 +2,60 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/dev/assets/oh-my-opencode.schema.json",
   "agents": {
     "sisyphus": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "hephaestus": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "oracle": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "librarian": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "explore": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "multimodal-looker": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "prometheus": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "metis": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "momus": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "atlas": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     }
   },
   "categories": {
     "visual-engineering": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "ultrabrain": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "deep": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "artistry": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "quick": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "unspecified-low": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "unspecified-high": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     },
     "writing": {
-      "model": "opencode-zen/big-pickle"
+      "model": "z.ai-cn/glm-4.7"
     }
   }
 }

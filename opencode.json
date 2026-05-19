@@ -24,6 +24,9 @@
         },
         "glm-4.7-flash": {
           "name": "glm-4.7-flash"
+        },
+        "glm-4.7": {
+          "name": "glm-4.7"
         }
       }
     }

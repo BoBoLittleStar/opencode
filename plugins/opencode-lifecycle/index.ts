@@ -19,37 +19,23 @@ export const BB_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
 
     const { OPENCODE_RESTART, OPENCODE_RESTART_LAST_PID } = process.env as RestartParam;
     if (OPENCODE_RESTART === "1") {
-        (async () => {
+        setTimeout(async () => {
             try {
-                const list = await client.session.list();
-                const session = list.data?.[0];
-                if (!session) return;
-
-                const sessionId = session.id;
                 if (OPENCODE_RESTART_LAST_PID) {
                     await $`powershell -Command "Stop-Process -Id ${OPENCODE_RESTART_LAST_PID}"`;
                 }
 
-                const messages = await client.session.messages({ path: { id: sessionId } });
-                const assistantMessage = messages.data?.find((m) => m.info.role === "assistant");
-                const agent = (assistantMessage?.info as { agent?: string })?.agent;
-
-                await client.session.promptAsync({
-                    path: { id: sessionId },
+                await client.tui.appendPrompt({
                     body: {
-                        agent,
-                        parts: [
-                            {
-                                type: "text",
-                                text: "Opencode restarted successfully. You can now resume your work.",
-                            },
-                        ],
+                        text: "Opencode restarted successfully. You can now resume your work.",
                     },
                 });
+                client.pty.list();
+                await client.tui.submitPrompt();
             } catch (err) {
                 getLogger().error(err);
             }
-        })();
+        }, 3000);
     }
     return {
         tool: {
@@ -81,15 +67,17 @@ export const BB_OpencodeLifeCycle: Plugin = async ({ client, $ }) => {
                 params.env.OPENCODE_RESTART = "1";
                 params.env.OPENCODE_RESTART_LAST_PID = `${process.pid}`;
                 const env = { ...process.env, ...params.env };
-                child_process.spawn("wt", ["powershell", "-Command", "omo -c"], { env }).on("error", (err: NodeJS.ErrnoException) => {
-                    if (err.code !== "ENOENT") {
-                        getLogger().error(err);
-                        return;
-                    }
-                    child_process
-                        .spawn("bash", ["-l", "-c", "omo -c"], { env })
-                        .on("error", () => getLogger().error("No available shell environments to restart omo!"));
-                });
+                child_process
+                    .spawn("wt", ["powershell", "-Command", "omo -c"], { env })
+                    .on("error", (err: NodeJS.ErrnoException) => {
+                        if (err.code !== "ENOENT") {
+                            getLogger().error(err);
+                            return;
+                        }
+                        child_process
+                            .spawn("bash", ["-l", "-c", "omo -c"], { env })
+                            .on("error", () => getLogger().error("No available shell environments to restart omo!"));
+                    });
             }
         },
     };

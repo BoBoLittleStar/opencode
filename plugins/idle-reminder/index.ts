@@ -1,9 +1,8 @@
 import { Plugin, tool } from "@opencode-ai/plugin";
+import { getLogger } from "../libs/logger";
 import { globalState } from "../shared/state";
 
-// Track the last agent for each session
-const sessionsAgent = new Map<string, string>();
-// Track sessions that were aborted by user (per-session, survives event timing issues)
+const sessionData = new Map<string, { agent: string; model: { providerID: string; modelID: string } }>();
 const abortedSessions = new Set<string>();
 
 export const BC_IdleReminder: Plugin = async ({ client }) => {
@@ -43,9 +42,12 @@ export const BC_IdleReminder: Plugin = async ({ client }) => {
                 event.type === "message.updated" &&
                 event.properties.info.role === "user" &&
                 event.properties.info.agent &&
-                !sessionsAgent.has(event.properties.info.sessionID)
+                !sessionData.has(event.properties.info.sessionID)
             ) {
-                sessionsAgent.set(event.properties.info.sessionID, event.properties.info.agent);
+                sessionData.set(event.properties.info.sessionID, {
+                    agent: event.properties.info.agent,
+                    model: event.properties.info.model,
+                });
             }
 
             // Track user-initiated aborts — don't auto-reply after abort
@@ -96,12 +98,14 @@ export const BC_IdleReminder: Plugin = async ({ client }) => {
                         return;
                     }
 
-                    const agent = sessionsAgent.get(sessionID);
-                    sessionsAgent.delete(sessionID);
+                    const { agent, model } = sessionData.get(sessionID) || {};
+                    getLogger().info(agent, model, model ? { ...model } : {});
+                    sessionData.delete(sessionID);
                     await client.session.prompt({
                         path: { id: sessionID },
                         body: {
                             ...(agent ? { agent } : {}),
+                            ...(model ? { ...model } : {}),
                             parts: [
                                 {
                                     type: "text",
