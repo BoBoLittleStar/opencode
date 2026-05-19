@@ -1,6 +1,7 @@
 import { Plugin, tool } from "@opencode-ai/plugin";
-import { WebSocketServer, WebSocket } from "ws";
 import * as http from "http";
+import { WebSocket, WebSocketServer } from "ws";
+import { getLogger } from "../libs/logger";
 
 // 环境变量名称
 const ENV_REMOTE_CONNECT = "OPENCODE_REMOTE_CONNECT";
@@ -31,33 +32,30 @@ const messageQueue: string[] = [];
 // 心跳定时器
 let heartbeatTimer: NodeJS.Timeout | null = null;
 
-// 日志函数
-function log(level: "info" | "error" | "warn", message: string, data?: any) {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] [remote-opencode] [${level.toUpperCase()}] ${message}`, data || "");
-}
+const logger = getLogger();
 
+// 日志函数
 // 创建 WebSocket 服务端
 function createWebSocketServer(): Promise<void> {
     return new Promise((resolve, reject) => {
         wsServerInstance = new WebSocketServer({ port: WS_SERVER_PORT });
 
         wsServerInstance.on("listening", () => {
-            log("info", `WebSocket server started on port ${WS_SERVER_PORT}`);
+            logger.info(`WebSocket server started on port ${WS_SERVER_PORT}`, undefined);
             resolve();
         });
 
         wsServerInstance.on("error", (error: Error) => {
-            log("error", "WebSocket server error", error);
+            logger.error("WebSocket server error", error);
             reject(error);
         });
 
         wsServerInstance.on("connection", (ws: WebSocket, req: any) => {
-            log("info", "New connection from OpenCode");
+            logger.info("New connection from OpenCode", undefined);
 
             // 关闭旧连接（如果存在）
             if (wsClient && wsClient.readyState === WS_STATE.OPEN) {
-                log("info", "Closing old connection");
+                logger.info("Closing old connection", undefined);
                 wsClient.close();
             }
 
@@ -69,7 +67,7 @@ function createWebSocketServer(): Promise<void> {
             // 处理消息
             ws.addEventListener("message", (event) => {
                 const message = event.data.toString();
-                log("info", "Received message from OpenCode", message);
+                logger.info("Received message from OpenCode", message);
 
                 // 转发给中间件（除了心跳消息）
                 if (message !== "heartbeat") {
@@ -79,7 +77,7 @@ function createWebSocketServer(): Promise<void> {
 
             // 处理连接关闭
             ws.addEventListener("close", () => {
-                log("info", "OpenCode disconnected");
+                logger.info("OpenCode disconnected", undefined);
 
                 // 如果不是正在重启，则通知中间件
                 if (!isRestarting) {
@@ -143,22 +141,20 @@ function createHttpMiddleware(): Promise<void> {
                         wsClient.send(data.message);
                         res.writeHead(200, { "Content-Type": "application/json" });
                         res.end(JSON.stringify({ success: true }));
-
                     } else if (url === "/consume_message") {
                         // 消费消息队列
                         const messages = messageQueue.splice(0, 10);
                         res.writeHead(200, { "Content-Type": "application/json" });
                         res.end(JSON.stringify({ messages }));
-
                     } else if (url === "/health") {
                         // 健康检查
                         const status = {
-                            middlewareConnected: middlewareWsClient !== null && middlewareWsClient.readyState === WebSocket.OPEN,
+                            middlewareConnected:
+                                middlewareWsClient !== null && middlewareWsClient.readyState === WebSocket.OPEN,
                             opencodeConnected: wsClient !== null && wsClient.readyState === WebSocket.OPEN,
                         };
                         res.writeHead(200, { "Content-Type": "application/json" });
                         res.end(JSON.stringify(status));
-
                     } else if (url === "/command") {
                         // 执行命令
                         const command = data.command;
@@ -170,13 +166,12 @@ function createHttpMiddleware(): Promise<void> {
                             res.writeHead(400, { "Content-Type": "application/json" });
                             res.end(JSON.stringify({ error: "Unknown command" }));
                         }
-
                     } else {
                         res.writeHead(404, { "Content-Type": "application/json" });
                         res.end(JSON.stringify({ error: "Not found" }));
                     }
                 } catch (error) {
-                    log("error", "Error handling request", error);
+                    logger.error("Error handling request", error);
                     res.writeHead(500, { "Content-Type": "application/json" });
                     res.end(JSON.stringify({ error: "Internal server error" }));
                 }
@@ -184,12 +179,12 @@ function createHttpMiddleware(): Promise<void> {
         });
 
         httpServerInstance.listen(HTTP_MIDDLEWARE_PORT, () => {
-            log("info", `HTTP middleware started on port ${HTTP_MIDDLEWARE_PORT}`);
+            logger.info(`HTTP middleware started on port ${HTTP_MIDDLEWARE_PORT}`, undefined);
             resolve();
         });
 
         httpServerInstance.on("error", (error: Error) => {
-            log("error", "HTTP middleware error", error);
+            logger.error("HTTP middleware error", error);
             reject(error);
         });
     });
@@ -201,24 +196,24 @@ function connectMiddlewareToServer(): Promise<void> {
         middlewareWsClient = new WebSocket(`ws://localhost:${WS_SERVER_PORT}`);
 
         middlewareWsClient.addEventListener("open", () => {
-            log("info", "Middleware connected to server");
+            logger.info("Middleware connected to server", undefined);
             resolve();
         });
 
         middlewareWsClient.addEventListener("message", (event) => {
             const message = event.data.toString();
-            log("info", "Middleware received message", message);
+            logger.info("Middleware received message", message);
 
             // 添加到队列
             messageQueue.push(message);
         });
 
         middlewareWsClient.addEventListener("error", (event: any) => {
-            log("error", "Middleware connection error", event.message || event);
+            logger.error("Middleware connection error", event.message || event);
         });
 
         middlewareWsClient.addEventListener("close", () => {
-            log("info", "Middleware disconnected from server");
+            logger.info("Middleware disconnected from server", undefined);
             middlewareWsClient = null;
         });
 
@@ -233,7 +228,7 @@ function connectMiddlewareToServer(): Promise<void> {
 // 发送消息到中间件
 function sendToMiddleware(message: string): void {
     if (!middlewareWsClient || middlewareWsClient.readyState !== WS_STATE.OPEN) {
-        log("warn", "Middleware not connected, cannot send message");
+        logger.warn("Middleware not connected, cannot send message", undefined);
         return;
     }
 
@@ -249,7 +244,7 @@ function startHeartbeat(ws: WebSocket): void {
         const message = event.data.toString();
         if (message === "heartbeat") {
             const elapsed = Date.now() - lastHeartbeatTime;
-            log("info", `Received heartbeat (elapsed: ${elapsed}ms)`);
+            logger.info(`Received heartbeat (elapsed: ${elapsed}ms)`, undefined);
 
             // 等待 30 秒后回复
             setTimeout(() => {
@@ -268,13 +263,13 @@ function connectOpenCodeToServer(): Promise<void> {
         const ws = new WebSocket(`ws://localhost:${WS_SERVER_PORT}`);
 
         ws.addEventListener("open", () => {
-            log("info", "OpenCode connected to server");
+            logger.info("OpenCode connected to server", undefined);
             resolve();
         });
 
         ws.addEventListener("message", (event) => {
             const message = event.data.toString();
-            log("info", "OpenCode received message from server", message);
+            logger.info("OpenCode received message from server", message);
 
             if (message === "heartbeat") {
                 // 心跳消息，不需要处理
@@ -286,12 +281,12 @@ function connectOpenCodeToServer(): Promise<void> {
         });
 
         ws.addEventListener("error", (event: any) => {
-            log("error", "OpenCode connection error", event.message || event);
+            logger.error("OpenCode connection error", event.message || event);
             reject(new Error(event.message || String(event)));
         });
 
         ws.addEventListener("close", () => {
-            log("info", "OpenCode disconnected from server");
+            logger.info("OpenCode disconnected from server", undefined);
             wsClient = null;
         });
 
@@ -316,7 +311,7 @@ function disconnectOpenCodeFromServer(): void {
 // 导出插件
 export const CA_OpencodeAPI: Plugin = async ({ client }) => {
     // 在插件加载时启动服务
-    log("info", "Initializing remote-opencode plugin");
+    logger.info("Initializing remote-opencode plugin", undefined);
 
     try {
         // 启动 WebSocket 服务端
@@ -328,19 +323,19 @@ export const CA_OpencodeAPI: Plugin = async ({ client }) => {
         // 连接中间件到服务端
         await connectMiddlewareToServer();
 
-        log("info", "Remote-opencode plugin initialized successfully");
+        logger.info("Remote-opencode plugin initialized successfully", undefined);
 
         // 检查环境变量，如果 OPENCODE_REMOTE_CONNECT=1 则自动连接
         if (process.env[ENV_REMOTE_CONNECT] === "1") {
-            log("info", "Auto-connecting to server based on environment variable");
+            logger.info("Auto-connecting to server based on environment variable", undefined);
             try {
                 await connectOpenCodeToServer();
             } catch (error) {
-                log("error", "Failed to auto-connect", error);
+                logger.error("Failed to auto-connect", error);
             }
         }
     } catch (error) {
-        log("error", "Failed to initialize plugin", error);
+        logger.error("Failed to initialize plugin", error);
     }
 
     return {
@@ -352,7 +347,7 @@ export const CA_OpencodeAPI: Plugin = async ({ client }) => {
                     url: tool.schema.string().optional().describe("服务端 URL，默认 ws://localhost:8881"),
                 },
                 async execute(args, context) {
-                    log("info", "Executing connect_remote", args);
+                    logger["info"]("Executing connect_remote", args);
 
                     // 检查是否已连接
                     if (wsClient && wsClient.readyState === WS_STATE.OPEN) {
@@ -365,10 +360,10 @@ export const CA_OpencodeAPI: Plugin = async ({ client }) => {
                         // 设置环境变量
                         process.env[ENV_REMOTE_CONNECT] = "1";
 
-                        log("info", "Connected to server successfully");
+                        logger["info"]("Connected to server successfully", undefined);
                         return JSON.stringify({ success: true });
                     } catch (error) {
-                        log("error", "Failed to connect to server", error);
+                        logger["error"]("Failed to connect to server", error);
                         return JSON.stringify({ success: false, error: String(error) });
                     }
                 },
@@ -378,14 +373,14 @@ export const CA_OpencodeAPI: Plugin = async ({ client }) => {
                 description: "断开与远程 opencode 服务端的连接",
                 args: {},
                 async execute(args, context) {
-                    log("info", "Executing disconnect_remote");
+                    logger["info"]("Executing disconnect_remote", undefined);
 
                     disconnectOpenCodeFromServer();
 
                     // 设置环境变量
                     process.env[ENV_REMOTE_CONNECT] = "0";
 
-                    log("info", "Disconnected from server");
+                    logger["info"]("Disconnected from server", undefined);
                     return JSON.stringify({ success: true });
                 },
             }),
@@ -424,7 +419,7 @@ export const CA_OpencodeAPI: Plugin = async ({ client }) => {
 
 // 清理函数（在进程退出时调用）
 function cleanup() {
-    log("info", "Cleaning up resources");
+    logger.info("Cleaning up resources", undefined);
 
     if (wsClient) {
         wsClient.close();
